@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-
+import api from "../../services/api";
 
 function ProtectedRoute() {
   const [loading, setLoading] = useState(true);
@@ -29,9 +29,7 @@ function ProtectedRoute() {
 
         // Kiểm tra token với backend (nếu có API verify)
         try {
-          const response = await axios.get("/api/auth/verify", {
-            headers: { Authorization: `Bearer ${token}` }
-          });
+          const response = await api.get("/api/auth/verify");
           
           if (response.data.success) {
             setIsAuth(true);
