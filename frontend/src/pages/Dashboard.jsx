@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import "../styles/Dashboard.css";
 
 function Dashboard() {
@@ -11,10 +11,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const response = await axios.get("http://localhost:5000/api/dashboard", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const response = await api.get("/api/dashboard");
         
         if (response.data.success) {
           setDashboardData(response.data.data);
@@ -50,12 +47,13 @@ function Dashboard() {
     navigate("/profile");
   };
 
-  // Hàm lấy URL ảnh đại diện
+  // Hàm lấy URL ảnh đại diện - dùng trực tiếp từ API
   const getAvatarUrl = () => {
     const avatar = dashboardData?.user?.avatar;
     if (avatar) {
-      if (avatar.startsWith('http')) return avatar;
-      return `http://localhost:5000${avatar}`;
+      // Nếu avatar đã là URL đầy đủ thì dùng luôn
+      // Nếu là path tương đối thì axios instance sẽ tự xử lý
+      return avatar;
     }
     return null;
   };

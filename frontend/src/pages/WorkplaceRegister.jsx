@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "../services/api";
 import "../styles/WorkplaceRegister.css";
 
 function WorkplaceRegister() {
@@ -31,10 +31,8 @@ function WorkplaceRegister() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await axios.get(
-        "http://localhost:5000/api/workplaces/my",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
+      const response = await api.get("/api/work-places/my");
 
       if (response.data.success) {
         setWorkplaces(response.data.workplaces || []);
@@ -79,18 +77,12 @@ function WorkplaceRegister() {
       };
 
       if (editingWorkplace) {
-        response = await axios.put(
-          `http://localhost:5000/api/workplaces/${editingWorkplace.id}`,
-          submitData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
+        response = await api.put(`/api/work-places/${editingWorkplace.id}`, submitData);
         showToast("Cập nhật thành công!", "success");
       } else {
-        response = await axios.post(
-          "http://localhost:5000/api/workplaces/register",
-          submitData,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
+        response = await api.post("/api/work-places/register", submitData);
         showToast("Đăng ký thành công!", "success");
       }
 

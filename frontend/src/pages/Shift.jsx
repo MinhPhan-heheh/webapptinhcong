@@ -138,7 +138,8 @@ function Shift() {
   const fetchWorkplaces = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await api.get("/workplaces/my", {
+      // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
+      const response = await api.get("/api/work-places/my", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWorkplaces(response.data.workplaces || []);
@@ -153,7 +154,8 @@ function Shift() {
     try {
       const token = localStorage.getItem("token");
       const params = selectedWorkplace ? { workplace_id: selectedWorkplace } : {};
-      const response = await api.get("/workplaces/shifts/my", { 
+      // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
+      const response = await api.get("/api/work-places/shifts/my", { 
         headers: { Authorization: `Bearer ${token}` },
         params 
       });
@@ -255,12 +257,14 @@ function Shift() {
       let response;
       
       if (editingShift) {
-        response = await api.put(`/workplaces/shifts/${editingShift.id}`, submitData, {
+        // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
+        response = await api.put(`/api/work-places/shifts/${editingShift.id}`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         showToast("✅ Cập nhật ca thành công!", "success");
       } else {
-        response = await api.post("/workplaces/shifts/create", submitData, {
+        // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
+        response = await api.post("/api/work-places/shifts/create", submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         showToast("✅ Đăng ký ca làm thành công!", "success");
@@ -284,7 +288,8 @@ function Shift() {
     
     try {
       const token = localStorage.getItem("token");
-      const response = await api.delete(`/workplaces/shifts/${id}`, {
+      // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
+      const response = await api.delete(`/api/work-places/shifts/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {
@@ -476,4 +481,4 @@ function Shift() {
   );
 }
 
-export default Shift; 
+export default Shift;
