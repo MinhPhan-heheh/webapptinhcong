@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: "https://workshift-o5sm.onrender.com",
 });
 
 api.interceptors.request.use(
