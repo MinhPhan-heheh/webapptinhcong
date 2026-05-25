@@ -46,7 +46,7 @@ function Login() {
         // SỬA: xóa URL cứng, dùng api instance
         const res =
           await api.post(
-            "/api/auth/login",
+            "/auth/login",
             {
               email,
               password,

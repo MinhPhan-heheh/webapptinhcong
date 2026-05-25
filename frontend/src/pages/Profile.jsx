@@ -52,7 +52,7 @@ function Profile() {
     try {
       setLoading(true);
       // Thêm prefix /api
-      const response = await api.get("/api/profile");
+      const response = await api.get("/profile");
 
       if (response.data.success) {
         setUser(response.data.user);
@@ -87,7 +87,7 @@ function Profile() {
 
     try {
       // Thêm prefix /api
-      const response = await api.put("/api/profile", formData);
+      const response = await api.put("/profile", formData);
 
       if (response.data.success) {
         setUser(response.data.user);
@@ -123,7 +123,7 @@ function Profile() {
 
     try {
       // Thêm prefix /api
-      const response = await api.put("/api/profile/password", {
+      const response = await api.put("/profile/password", {
         current_password: passwordData.current_password,
         new_password: passwordData.new_password,
       });
@@ -184,7 +184,7 @@ function Profile() {
 
     try {
       // Thêm prefix /api
-      const response = await api.post("/api/profile/avatar", formData, {
+      const response = await api.post("/profile/avatar", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -219,7 +219,7 @@ function Profile() {
   const handleRemoveAvatar = async () => {
     try {
       // Thêm prefix /api
-      const response = await api.delete("/api/profile/avatar");
+      const response = await api.delete("/profile/avatar");
 
       if (response.data.success) {
         setUser(response.data.user);

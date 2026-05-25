@@ -62,7 +62,7 @@ function Attendance() {
       if (!token) return;
 
       // Sửa API endpoint: /api/work-places/shifts/my (dựa trên route backend)
-      const response = await api.get("/api/work-places/shifts/my");
+      const response = await api.get("/work-places/shifts/my");
       
       if (response.data.success) {
         setShifts(response.data.shifts || []);
