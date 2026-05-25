@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import api from "../../services/api";
 
 function ProtectedRoute() {
   const [loading, setLoading] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
-    const verifyToken = async () => {
+    const verifyToken = () => {
       const token = localStorage.getItem("token");
 
+      // Không có token -> chưa đăng nhập
       if (!token) {
         logout();
         return;
@@ -20,6 +20,7 @@ function ProtectedRoute() {
         const payload = JSON.parse(atob(token.split(".")[1]));
         const now = Date.now() / 1000;
 
+        // Token đã hết hạn
         if (payload.exp < now) {
           console.log("Token expired at:", new Date(payload.exp * 1000));
           alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
@@ -27,36 +28,19 @@ function ProtectedRoute() {
           return;
         }
 
-        // Kiểm tra token với backend (nếu có API verify)
-        try {
-          const response = await api.get("/api/auth/verify");
-          
-          if (response.data.success) {
-            setIsAuth(true);
-            // Lưu thông tin user nếu cần
-            if (response.data.user) {
-              localStorage.setItem("user", JSON.stringify(response.data.user));
-            }
-          } else {
-            logout();
-            return;
-          }
-        } catch (error) {
-          // Nếu không có API verify, vẫn cho phép nếu token hợp lệ về mặt thời gian
-          console.warn("Backend verify API not available, trusting token by expiration only");
-          setIsAuth(true);
-        }
-
+        // Token còn hạn -> cho phép truy cập
+        setIsAuth(true);
         setLoading(false);
 
-        // Tự động đăng xuất khi token hết hạn
+        // Tự động đăng xuất khi token sắp hết hạn
         const timeLeft = (payload.exp - now) * 1000;
-        if (timeLeft > 0 && timeLeft < 24 * 60 * 60 * 1000) { // Chỉ đặt timer nếu còn dưới 24h
+        if (timeLeft > 0 && timeLeft < 24 * 60 * 60 * 1000) {
           const timer = setTimeout(() => {
             console.log("Token expired, logging out...");
             alert("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại");
             logout();
           }, timeLeft);
+          // Cleanup timer khi component unmount
           return () => clearTimeout(timer);
         }
       } catch (err) {
