@@ -29,7 +29,7 @@ function ProtectedRoute() {
 
         // Kiểm tra token với backend (nếu có API verify)
         try {
-          const response = await axios.get("http://localhost:5000/api/auth/verify", {
+          const response = await axios.get("/api/auth/verify", {
             headers: { Authorization: `Bearer ${token}` }
           });
           
