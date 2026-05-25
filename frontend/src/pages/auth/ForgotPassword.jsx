@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 // SỬA: thay axios bằng api
-import api from "./services/api";
+import api from "../../services/api";
 import { useNavigate, Link } from "react-router-dom";
 
 function ForgotPassword() {

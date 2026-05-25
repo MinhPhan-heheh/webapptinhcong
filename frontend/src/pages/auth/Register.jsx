@@ -3,7 +3,7 @@ import React, {
 } from "react";
 
 // SỬA: thay axios bằng api
-import api from "./services/api";
+import api from "../../services/api";
 
 import {
   useNavigate,
