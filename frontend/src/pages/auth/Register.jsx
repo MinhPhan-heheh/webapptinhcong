@@ -2,7 +2,8 @@ import React, {
   useState,
 } from "react";
 
-import axios from "axios";
+// SỬA: thay axios bằng api
+import api from "../services/api";
 
 import {
   useNavigate,
@@ -110,9 +111,10 @@ function Register() {
 
       try {
 
+        // SỬA: xóa URL cứng, dùng api instance
         const res =
-          await axios.post(
-            "http://localhost:5000/api/auth/register",
+          await api.post(
+            "/api/auth/register",
             {
               fullName:
                 formData.fullName.trim(),

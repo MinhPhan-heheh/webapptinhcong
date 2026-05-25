@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import axios from "axios";
+// SỬA: thay axios bằng api
+import api from "../services/api";
 import { useNavigate, Link } from "react-router-dom";
 
 function ForgotPassword() {
@@ -21,7 +22,8 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/api/auth/forgot-password", {
+      // SỬA: xóa URL cứng, dùng api instance
+      await api.post("/api/auth/forgot-password", {
         email,
       });
 
@@ -40,7 +42,8 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/api/auth/verify-otp", {
+      // SỬA: xóa URL cứng, dùng api instance
+      await api.post("/api/auth/verify-otp", {
         email,
         otp,
       });
@@ -65,7 +68,8 @@ function ForgotPassword() {
     setLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/api/auth/reset-password", {
+      // SỬA: xóa URL cứng, dùng api instance
+      await api.post("/api/auth/reset-password", {
         email,
         otp,
         newPassword,
@@ -220,15 +224,14 @@ const styles = {
     color: "#333",
   },
 
-  // ✅ CHỈ CHỈNH Ở ĐÂY (GIỮ UI, CHỈ NGẮN HƠN NHẸ)
   input: {
-    width: "92%",        // 👈 giảm nhẹ chiều ngang
+    width: "92%",
     padding: "14px 16px",
     border: "1px solid #ddd",
     borderRadius: "10px",
     fontSize: "16px",
     outline: "none",
-    margin: "0 auto",    // 👈 căn giữa
+    margin: "0 auto",
     display: "block",
   },
 
