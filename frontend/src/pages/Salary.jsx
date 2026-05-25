@@ -222,8 +222,9 @@ function Salary() {
 
   const fetchWorkplaces = useCallback(async () => {
     try {
-      // ĐÃ SỬA: từ "/api/workplaces/my" thành "/api/work-places/my"
-      const response = await api.get("/work-places/my");
+      const response = await api.get(
+        "/api/workplaces/my"
+      );
 
       if (response.data.success) {
         setAllWorkplaces(
@@ -245,11 +246,11 @@ function Salary() {
       const [salaryRes, workplaceRes] =
         await Promise.all([
           api.get(
-            `/salary/calculate?year=${selectedYear}&month=${selectedMonth}`
+            `/api/salary/calculate?year=${selectedYear}&month=${selectedMonth}`
           ),
 
           api.get(
-            `/salary/by-workplace?year=${selectedYear}&month=${selectedMonth}`
+            `/api/salary/by-workplace?year=${selectedYear}&month=${selectedMonth}`
           ),
         ]);
 

@@ -32,7 +32,7 @@ function WorkplaceRegister() {
       if (!token) return;
 
       // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
-      const response = await api.get("/work-places/my");
+      const response = await api.get("/api/work-places/my");
 
       if (response.data.success) {
         setWorkplaces(response.data.workplaces || []);
@@ -78,11 +78,11 @@ function WorkplaceRegister() {
 
       if (editingWorkplace) {
         // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
-        response = await api.put(`/work-places/${editingWorkplace.id}`, submitData);
+        response = await api.put(`/api/work-places/${editingWorkplace.id}`, submitData);
         showToast("Cập nhật thành công!", "success");
       } else {
         // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
-        response = await api.post("/work-places/register", submitData);
+        response = await api.post("/api/work-places/register", submitData);
         showToast("Đăng ký thành công!", "success");
       }
 

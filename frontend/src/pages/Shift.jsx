@@ -139,7 +139,7 @@ function Shift() {
     try {
       const token = localStorage.getItem("token");
       // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-      const response = await api.get("/work-places/my", {
+      const response = await api.get("/api/work-places/my", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setWorkplaces(response.data.workplaces || []);
@@ -155,7 +155,7 @@ function Shift() {
       const token = localStorage.getItem("token");
       const params = selectedWorkplace ? { workplace_id: selectedWorkplace } : {};
       // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-      const response = await api.get("/work-places/shifts/my", { 
+      const response = await api.get("/api/work-places/shifts/my", { 
         headers: { Authorization: `Bearer ${token}` },
         params 
       });
@@ -258,13 +258,13 @@ function Shift() {
       
       if (editingShift) {
         // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-        response = await api.put(`/work-places/shifts/${editingShift.id}`, submitData, {
+        response = await api.put(`/api/work-places/shifts/${editingShift.id}`, submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         showToast("✅ Cập nhật ca thành công!", "success");
       } else {
         // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-        response = await api.post("/work-places/shifts/create", submitData, {
+        response = await api.post("/api/work-places/shifts/create", submitData, {
           headers: { Authorization: `Bearer ${token}` }
         });
         showToast("✅ Đăng ký ca làm thành công!", "success");
@@ -289,7 +289,7 @@ function Shift() {
     try {
       const token = localStorage.getItem("token");
       // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-      const response = await api.delete(`/work-places/shifts/${id}`, {
+      const response = await api.delete(`/api/work-places/shifts/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data.success) {

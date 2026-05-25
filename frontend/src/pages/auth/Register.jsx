@@ -3,7 +3,7 @@ import React, {
 } from "react";
 
 // SỬA: thay axios bằng api
-import api from "../../services/api";
+import api from ".././services/api";
 
 import {
   useNavigate,
@@ -112,12 +112,24 @@ function Register() {
       try {
 
         // SỬA: xóa URL cứng, dùng api instance
-       const res = await api.post("/auth/register", {
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        password: formData.password,
-        });
+        const res =
+          await api.post(
+            "/api/auth/register",
+            {
+              fullName:
+                formData.fullName.trim(),
+
+              email:
+                formData.email.trim(),
+
+              phone:
+                formData.phone.trim(),
+
+              password:
+                formData.password,
+            }
+          );
+
         setSuccess(
           res.data.message ||
             "Đăng ký thành công"

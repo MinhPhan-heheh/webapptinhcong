@@ -11,7 +11,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const response = await api.get("/dashboard");
+        const response = await api.get("/api/dashboard");
         
         if (response.data.success) {
           setDashboardData(response.data.data);

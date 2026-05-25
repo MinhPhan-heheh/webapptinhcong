@@ -23,7 +23,9 @@ function ForgotPassword() {
 
     try {
       // SỬA: xóa URL cứng, dùng api instance
-      await api.post("/auth/forgot-password", { email });
+      await api.post("/api/auth/forgot-password", {
+        email,
+      });
 
       setSuccess("Mã OTP đã được gửi đến email của bạn!");
       setStep(2);
@@ -41,8 +43,10 @@ function ForgotPassword() {
 
     try {
       // SỬA: xóa URL cứng, dùng api instance
-      await api.post("/auth/verify-otp", { email, otp });
-
+      await api.post("/api/auth/verify-otp", {
+        email,
+        otp,
+      });
 
       setStep(3);
     } catch (err) {
@@ -65,8 +69,11 @@ function ForgotPassword() {
 
     try {
       // SỬA: xóa URL cứng, dùng api instance
-      await api.post("/auth/reset-password", { email, otp, newPassword });
-
+      await api.post("/api/auth/reset-password", {
+        email,
+        otp,
+        newPassword,
+      });
 
       setSuccess("Đổi mật khẩu thành công!");
       setTimeout(() => navigate("/"), 2000);
