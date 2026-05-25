@@ -1,0 +1,415 @@
+/* Giữ nguyên CSS cũ, chỉ cần thêm/giữ lại các phần sau */
+
+.shift-page {
+  padding: 16px;
+  background: #f5f7fa;
+  min-height: 100vh;
+}
+
+.top-bar {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.filter-bar {
+  margin-bottom: 16px;
+}
+
+.filter-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+}
+
+.controls-bar {
+  background: white;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.month-controls, .week-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-btn {
+  padding: 6px 14px;
+  background: #e9ecef;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.today-btn {
+  background: #007bff;
+  color: white;
+}
+
+.month-select {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.week-info {
+  padding: 6px 12px;
+  background: #e9ecef;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.day-card {
+  background: white;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  display: flex;
+  flex-direction: column;
+  min-height: 280px;
+}
+
+.today-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.card-header {
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.day-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+}
+
+.today-card .day-name {
+  color: white;
+}
+
+.day-number {
+  font-size: 24px;
+  margin: 4px 0;
+  color: #333;
+}
+
+.today-card .day-number {
+  color: white;
+}
+
+.month-name {
+  font-size: 10px;
+  color: #999;
+}
+
+.shift-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff5722;
+  color: white;
+  border-radius: 20px;
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
+.shifts-list {
+  flex: 1;
+  margin-bottom: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.shift-card {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-left: 3px solid #007bff;
+  position: relative;
+}
+
+.shift-card.holiday {
+  background: #fff8e1;
+  border-left-color: #ff9800;
+}
+
+.shift-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+}
+
+.edit-btn, .delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.edit-btn {
+  color: #28a745;
+}
+
+.delete-btn {
+  color: #dc3545;
+}
+
+.shift-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: #007bff;
+  padding-right: 40px;
+}
+
+.shift-location {
+  font-size: 11px;
+  color: #555;
+  margin-top: 4px;
+}
+
+.holiday-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #ff9800, #f57c00);
+  color: white;
+  border-radius: 20px;
+  font-size: 9px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+
+.empty-box {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 12px;
+}
+
+.add-btn {
+  width: 100%;
+  padding: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: auto;
+}
+
+.today-card .add-btn {
+  background: #ffd700;
+  color: #333;
+}
+
+.fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #007bff;
+  color: white;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 100;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.modal-box h2 {
+  margin: 0 0 20px;
+  font-size: 20px;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 13px;
+  color: #555;
+}
+
+.form-group input, .form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cancel-btn, .save-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.cancel-btn {
+  background: #e9ecef;
+  color: #333;
+}
+
+.save-btn {
+  background: #28a745;
+  color: white;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255,255,255,0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  font-size: 16px;
+  color: #007bff;
+}
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 10px;
+  color: white;
+  font-size: 14px;
+  z-index: 10000;
+  animation: slideDown 0.3s ease;
+}
+
+.toast-notification.success {
+  background: #28a745;
+}
+
+.toast-notification.error {
+  background: #dc3545;
+}
+
+@keyframes slideDown {
+  from {
+    top: -50px;
+    opacity: 0;
+  }
+  to {
+    top: 20px;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1024px) {
+  .week-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .shift-page {
+    padding: 12px;
+  }
+  .week-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .controls-bar {
+    flex-direction: column;
+  }
+  .month-controls, .week-controls {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .week-grid {
+    grid-template-columns: 1fr;
+  }
+  .title {
+    font-size: 18px;
+  }
+}
