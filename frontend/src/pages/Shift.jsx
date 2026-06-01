@@ -137,11 +137,8 @@ function Shift() {
   // Fetch data
   const fetchWorkplaces = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-      const response = await api.get("/api/work-places/my", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // ĐÃ SỬA: work-places -> workplaces
+      const response = await api.get("/api/workplaces/my");
       setWorkplaces(response.data.workplaces || []);
     } catch (error) {
       console.error("Lỗi fetch workplaces:", error);
@@ -152,13 +149,9 @@ function Shift() {
   const fetchShifts = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
       const params = selectedWorkplace ? { workplace_id: selectedWorkplace } : {};
-      // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-      const response = await api.get("/api/work-places/shifts/my", { 
-        headers: { Authorization: `Bearer ${token}` },
-        params 
-      });
+      // ĐÃ SỬA: work-places -> workplaces
+      const response = await api.get("/api/workplaces/shifts/my", { params });
       
       if (response.data.success) {
         const processedShifts = (response.data.shifts || []).map(shift => ({
@@ -253,20 +246,15 @@ function Shift() {
     };
 
     try {
-      const token = localStorage.getItem("token");
       let response;
       
       if (editingShift) {
-        // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-        response = await api.put(`/api/work-places/shifts/${editingShift.id}`, submitData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // ĐÃ SỬA: work-places -> workplaces
+        response = await api.put(`/api/workplaces/shifts/${editingShift.id}`, submitData);
         showToast("✅ Cập nhật ca thành công!", "success");
       } else {
-        // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-        response = await api.post("/api/work-places/shifts/create", submitData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        // ĐÃ SỬA: work-places -> workplaces
+        response = await api.post("/api/workplaces/shifts/create", submitData);
         showToast("✅ Đăng ký ca làm thành công!", "success");
       }
 
@@ -287,11 +275,8 @@ function Shift() {
     if (!window.confirm("⚠️ Bạn có chắc chắn muốn xóa ca làm này?")) return;
     
     try {
-      const token = localStorage.getItem("token");
-      // ĐÃ SỬA: thêm prefix /api và sửa thành work-places
-      const response = await api.delete(`/api/work-places/shifts/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // ĐÃ SỬA: work-places -> workplaces
+      const response = await api.delete(`/api/workplaces/shifts/${id}`);
       if (response.data.success) {
         showToast("✅ Xóa ca thành công!", "success");
         fetchShifts();
