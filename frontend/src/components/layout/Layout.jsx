@@ -29,7 +29,7 @@ function Layout() {
 
   return (
     <div style={styles.container}>
-      <Sidebar isOpen={isOpen} isMobile={isMobile} />
+      <Sidebar isOpen={isOpen} isMobile={isMobile} onToggle={toggleSidebar} />
       
       <div
         style={{
