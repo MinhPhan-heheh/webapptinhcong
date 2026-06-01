@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, memo, useRef, startTransition } from "react";
 import api from "../services/api";
 import "../styles/Shift.css";
 
@@ -10,6 +10,43 @@ const MONTH_NAMES = [
 ];
 const TOAST_DURATION = 3000;
 const REFRESH_INTERVAL = 30000; // 30 seconds
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY = "shift_cache";
+
+// Cache Manager
+const cacheManager = {
+  get: (key) => {
+    try {
+      const cached = localStorage.getItem(`${CACHE_KEY}_${key}`);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return data;
+        }
+      }
+    } catch (e) {
+      console.error("Cache read error:", e);
+    }
+    return null;
+  },
+  set: (key, data) => {
+    try {
+      localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.error("Cache write error:", e);
+    }
+  },
+  clear: () => {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(CACHE_KEY)) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+};
 
 // Helper functions
 const formatVNDate = (dateStr) => {
@@ -48,16 +85,11 @@ const ShiftCard = memo(({ shift, onEdit, onDelete }) => (
   </div>
 ));
 
-const DayCard = memo(({ day, todayStr, shifts, onAddShift, onEditShift, onDeleteShift }) => {
+const DayCard = memo(({ day, todayStr, shiftsMap, onAddShift, onEditShift, onDeleteShift }) => {
   const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
   const isToday = dateStr === todayStr;
-  
-  const dayShifts = useMemo(() => 
-    shifts.filter(shift => {
-      const shiftDate = shift.shift_date?.split('T')[0];
-      return shiftDate === dateStr;
-    }), [shifts, dateStr]
-  );
+  const dayShifts = shiftsMap.get(dateStr) || [];
+  const hasShifts = dayShifts.length > 0;
 
   return (
     <div className={`day-card ${isToday ? "today-card" : ""}`}>
@@ -65,10 +97,10 @@ const DayCard = memo(({ day, todayStr, shifts, onAddShift, onEditShift, onDelete
         <span className="day-name">{WEEK_NAMES[day.getDay()]}</span>
         <h2 className="day-number">{day.getDate()}</h2>
         <span className="month-name">{day.getMonth() + 1}/{day.getFullYear()}</span>
-        {dayShifts.length > 0 && <span className="shift-count">{dayShifts.length}</span>}
+        {hasShifts && <span className="shift-count">{dayShifts.length}</span>}
       </div>
       <div className="shifts-list">
-        {dayShifts.length > 0 ? (
+        {hasShifts ? (
           dayShifts.map((shift) => (
             <ShiftCard key={shift.id} shift={shift} onEdit={onEditShift} onDelete={onDeleteShift} />
           ))
@@ -102,7 +134,9 @@ function Shift() {
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [editingShift, setEditingShift] = useState(null);
-  const [selectedWorkplace, setSelectedWorkplace] = useState("");
+  const [selectedWorkplace, setSelectedWorkplace] = useState(() => {
+    return localStorage.getItem("selected_workplace") || "";
+  });
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
   const [formData, setFormData] = useState({
     start_time: "",
@@ -111,10 +145,20 @@ function Shift() {
     holiday_type: "normal",
   });
 
+  // Refs
+  const abortControllerRef = useRef(null);
+  const cacheKey = useMemo(() => `shifts_${selectedWorkplace}`, [selectedWorkplace]);
+
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
     const timer = setTimeout(() => setToast({ show: false, message: "", type: "" }), TOAST_DURATION);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Save selected workplace to localStorage
+  const handleWorkplaceChange = useCallback((value) => {
+    setSelectedWorkplace(value);
+    localStorage.setItem("selected_workplace", value);
   }, []);
 
   // Navigation handlers
@@ -143,11 +187,21 @@ function Shift() {
     setCurrentDate(new Date(parseInt(year), parseInt(month) - 1, 1));
   }, []);
 
-  // Fetch data with abort controller
+  // Fetch workplaces with caching
   const fetchWorkplaces = useCallback(async () => {
+    const cachedWorkplaces = cacheManager.get("workplaces");
+    if (cachedWorkplaces) {
+      setWorkplaces(cachedWorkplaces);
+      return;
+    }
+
     try {
       const response = await api.get("/api/workplaces/my");
-      setWorkplaces(response.data.workplaces || []);
+      if (response.data.success) {
+        const workplaceData = response.data.workplaces || [];
+        setWorkplaces(workplaceData);
+        cacheManager.set("workplaces", workplaceData);
+      }
     } catch (error) {
       if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
         console.error("Lỗi fetch workplaces:", error);
@@ -158,16 +212,36 @@ function Shift() {
     }
   }, [showToast]);
 
+  // Fetch shifts with caching and abort
   const fetchShifts = useCallback(async (isRefresh = false) => {
-    const controller = new AbortController();
-    
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Check cache
+    if (!isRefresh) {
+      const cachedShifts = cacheManager.get(cacheKey);
+      if (cachedShifts) {
+        startTransition(() => {
+          setShifts(cachedShifts);
+        });
+        return;
       }
-      
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      startTransition(() => {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+      });
+
       const params = selectedWorkplace ? { workplace_id: selectedWorkplace } : {};
       const response = await api.get("/api/workplaces/shifts/my", { 
         params,
@@ -179,28 +253,38 @@ function Shift() {
           ...shift,
           shift_date: formatVNDate(shift.shift_date)
         }));
-        setShifts(processedShifts);
+        
+        startTransition(() => {
+          setShifts(processedShifts);
+        });
+        
+        // Cache the data
+        cacheManager.set(cacheKey, processedShifts);
       } else {
-        setShifts([]);
+        startTransition(() => {
+          setShifts([]);
+        });
       }
     } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+      if (error.name !== "AbortError") {
         console.error("Lỗi fetch shifts:", error);
         if (error.response?.status !== 401) {
-          setShifts([]);
+          startTransition(() => {
+            setShifts([]);
+          });
           showToast("Không thể tải danh sách ca làm", "error");
         }
       }
     } finally {
-      if (isRefresh) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
-      }
+      startTransition(() => {
+        if (isRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
+      });
     }
-    
-    return () => controller.abort();
-  }, [selectedWorkplace, showToast]);
+  }, [selectedWorkplace, cacheKey, showToast]);
 
   // Initial load
   useEffect(() => {
@@ -208,17 +292,23 @@ function Shift() {
       await Promise.all([fetchShifts(), fetchWorkplaces()]);
     };
     loadData();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchShifts, fetchWorkplaces]);
 
   // Auto refresh every 30 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      if (!loading && !refreshing) {
+      if (!loading && !refreshing && !showForm) {
         fetchShifts(true);
       }
     }, REFRESH_INTERVAL);
     return () => clearInterval(interval);
-  }, [fetchShifts, loading, refreshing]);
+  }, [fetchShifts, loading, refreshing, showForm]);
 
   // Form handlers
   const resetForm = useCallback(() => {
@@ -303,6 +393,8 @@ function Shift() {
       if (response.data.success) {
         setShowForm(false);
         resetForm();
+        // Clear cache and refresh
+        cacheManager.clear();
         fetchShifts(true);
       } else {
         showToast(response.data.message || "Có lỗi xảy ra", "error");
@@ -319,6 +411,8 @@ function Shift() {
       const response = await api.delete(`/api/workplaces/shifts/${id}`);
       if (response.data.success) {
         showToast("Xóa ca thành công!", "success");
+        // Clear cache and refresh
+        cacheManager.clear();
         fetchShifts(true);
       } else {
         showToast(response.data.message, "error");
@@ -346,29 +440,47 @@ function Shift() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
+  // Optimized shifts map for O(1) lookup
+  const shiftsMap = useMemo(() => {
+    const map = new Map();
+    for (const shift of shifts) {
+      const dateKey = shift.shift_date?.split('T')[0];
+      if (dateKey) {
+        if (!map.has(dateKey)) {
+          map.set(dateKey, []);
+        }
+        map.get(dateKey).push(shift);
+      }
+    }
+    return map;
+  }, [shifts]);
+
   const formatDisplayDate = useCallback((dateStr) => {
     if (!dateStr) return "Chưa chọn ngày";
     const date = new Date(dateStr);
     return date.toLocaleDateString('vi-VN');
   }, []);
 
-  // Memoized shift map for better performance
-  const shiftsByDateMap = useMemo(() => {
-    const map = new Map();
-    shifts.forEach(shift => {
-      const dateKey = shift.shift_date?.split('T')[0];
-      if (dateKey) {
-        if (!map.has(dateKey)) map.set(dateKey, []);
-        map.get(dateKey).push(shift);
-      }
-    });
-    return map;
-  }, [shifts]);
-
-  // Optimized get shifts by date using map
-  const getShiftsByDate = useCallback((dateStr) => {
-    return shiftsByDateMap.get(dateStr) || [];
-  }, [shiftsByDateMap]);
+  // Loading state
+  if (loading && !refreshing) {
+    return (
+      <div className="shift-page">
+        <div className="top-bar">
+          <div>
+            <h1 className="title">📅 Quản lý ca làm</h1>
+            <p className="subtitle">Đang tải...</p>
+          </div>
+        </div>
+        <div className="loading-skeleton">
+          <div className="skeleton-week-grid">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="skeleton-day-card"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="shift-page">
@@ -387,7 +499,7 @@ function Shift() {
         <select 
           className="filter-select"
           value={selectedWorkplace}
-          onChange={(e) => setSelectedWorkplace(e.target.value)}
+          onChange={(e) => handleWorkplaceChange(e.target.value)}
         >
           <option value="">📋 Tất cả chỗ làm</option>
           {workplaces.map(w => (
@@ -427,7 +539,7 @@ function Shift() {
             key={index}
             day={day}
             todayStr={todayStr}
-            shifts={shifts}
+            shiftsMap={shiftsMap}
             onAddShift={openAddForm}
             onEditShift={handleEditShift}
             onDeleteShift={handleDeleteShift}
@@ -445,7 +557,7 @@ function Shift() {
             <div className="form-group date-display" style={{ 
               backgroundColor: selectedDate ? '#e8f5e9' : '#ffebee', 
               padding: '12px', 
-              borderRadius: '8px', 
+              borderRadius: '12px', 
               marginBottom: '15px'
             }}>
               <label style={{ fontWeight: 'bold', color: selectedDate ? '#2e7d32' : '#c62828' }}>
@@ -514,8 +626,6 @@ function Shift() {
           </form>
         </div>
       )}
-
-      {loading && <LoadingSpinner />}
     </div>
   );
 }

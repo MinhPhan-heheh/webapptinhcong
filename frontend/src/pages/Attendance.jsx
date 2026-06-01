@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo, memo } from "react";
+import React, { useEffect, useState, useCallback, useMemo, memo, useRef } from "react";
 import api from "../services/api";
 import "../styles/Attendance.css";
 
@@ -6,22 +6,24 @@ import "../styles/Attendance.css";
 const WEEK_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const MONTH_NAMES = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
 
-// Format date helper
+// Format date helper - optimized
 const formatDate = (date) => {
+  if (!date) return "";
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
-// Get current date string
 const getTodayStr = () => formatDate(new Date());
 
-// Shift Card Component - memoized để tránh re-render không cần thiết
+// Optimized Shift Card Component
 const ShiftCard = memo(({ shift, isSelected, onClick }) => (
   <div 
     className={`shift-card ${shift.holiday_type === 'holiday' ? 'holiday' : ''} ${isSelected ? "selected" : ""}`}
     onClick={onClick}
+    role="button"
+    tabIndex={0}
   >
     <div className="shift-time">
       {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}
@@ -31,14 +33,8 @@ const ShiftCard = memo(({ shift, isSelected, onClick }) => (
   </div>
 ));
 
-// Day Card Component - memoized
-const DayCard = memo(({ day, shifts, selectedShiftId, onShiftClick, todayStr }) => {
-  const dateStr = formatDate(day);
-  const isToday = dateStr === todayStr;
-  const dayShifts = shifts.filter(shift => {
-    const shiftDate = shift.shift_date?.split("T")[0];
-    return shiftDate === dateStr;
-  });
+// Optimized Day Card Component - receives pre-filtered shifts
+const DayCard = memo(({ day, dayShifts, selectedShiftId, onShiftClick, isToday }) => {
   const hasShifts = dayShifts.length > 0;
 
   return (
@@ -50,7 +46,7 @@ const DayCard = memo(({ day, shifts, selectedShiftId, onShiftClick, todayStr }) 
         {hasShifts && <span className="shift-count">{dayShifts.length}</span>}
       </div>
       <div className="shifts-list">
-        {dayShifts.length > 0 ? (
+        {hasShifts ? (
           dayShifts.map((shift) => (
             <ShiftCard 
               key={shift.id} 
@@ -62,6 +58,29 @@ const DayCard = memo(({ day, shifts, selectedShiftId, onShiftClick, todayStr }) 
         ) : (
           <div className="empty-box">📭 Không có ca</div>
         )}
+      </div>
+    </div>
+  );
+});
+
+// Virtualized Month Day Component
+const MonthDay = memo(({ day, isToday, dayShifts, selectedShiftId, onShiftClick }) => {
+  const hasShifts = dayShifts.length > 0;
+  
+  return (
+    <div className={`month-day ${isToday ? "today" : ""} ${hasShifts ? "has-shifts" : ""}`}>
+      <div className="day-number">{day.getDate()}</div>
+      <div className="day-shifts">
+        {dayShifts.slice(0, 3).map((shift) => (
+          <div 
+            key={shift.id} 
+            className={`day-shift-item ${selectedShiftId === shift.id ? "active" : ""}`}
+            onClick={() => onShiftClick(shift, day)}
+          >
+            {shift.start_time?.slice(0,5)}
+          </div>
+        ))}
+        {dayShifts.length > 3 && <div className="more-shifts">+{dayShifts.length - 3}</div>}
       </div>
     </div>
   );
@@ -87,28 +106,34 @@ const DetailPanel = memo(({ shift, day, onClose }) => {
   );
 });
 
+// Toast Component
+const Toast = memo(({ show, message, type }) => {
+  if (!show) return null;
+  return <div className={`toast-notification ${type}`}>{message}</div>;
+});
+
 function Attendance() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState(() => {
-    // Lưu view mode vào localStorage
     return localStorage.getItem("attendance_view_mode") || "week";
   });
   const [selectedShift, setSelectedShift] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const abortControllerRef = useRef(null);
 
   const showToast = useCallback((message, type = "error") => {
     const icon = type === "success" ? "✅ " : "❌ ";
     setToast({ show: true, message: icon + message, type });
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToast({ show: false, message: "", type: "" });
     }, 3000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Save view mode when changed
   const handleViewModeChange = useCallback((mode) => {
     setViewMode(mode);
     localStorage.setItem("attendance_view_mode", mode);
@@ -116,7 +141,7 @@ function Attendance() {
     setSelectedDay(null);
   }, []);
 
-  // Navigation handlers
+  // Navigation handlers - optimized with useCallback
   const goToPreviousWeek = useCallback(() => {
     setCurrentDate(prev => new Date(prev.getTime() - 7 * 24 * 60 * 60 * 1000));
     setSelectedShift(null);
@@ -149,7 +174,13 @@ function Attendance() {
 
   // Fetch shifts with abort controller
   const fetchShifts = useCallback(async (isRefresh = false) => {
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     
     try {
       if (isRefresh) {
@@ -170,15 +201,11 @@ function Attendance() {
       
       if (response.data.success) {
         setShifts(response.data.shifts || []);
-      } else {
-        showToast(response.data.message || "Không thể tải lịch làm việc", "error");
       }
     } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+      if (error.name !== "AbortError") {
         console.error("Lỗi fetch shifts:", error);
-        if (error.response?.status === 401) {
-          showToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
-        } else {
+        if (error.response?.status !== 401) {
           showToast("Không thể tải lịch làm việc", "error");
         }
       }
@@ -189,25 +216,19 @@ function Attendance() {
         setLoading(false);
       }
     }
-    
-    return () => controller.abort();
   }, [showToast]);
 
   // Initial load
   useEffect(() => {
     fetchShifts();
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchShifts]);
 
-  // Auto refresh every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchShifts(true);
-    }, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [fetchShifts]);
-
-  // Get week dates based on current date - memoized
+  // Get week dates - memoized
   const weekDays = useMemo(() => {
     const current = new Date(currentDate);
     const day = current.getDay();
@@ -236,7 +257,7 @@ function Attendance() {
     return days;
   }, [currentDate]);
 
-  // Create shifts map for quick lookup - memoized
+  // Create shifts map for O(1) lookup - memoized
   const shiftsByDate = useMemo(() => {
     const map = new Map();
     shifts.forEach(shift => {
@@ -249,12 +270,10 @@ function Attendance() {
     return map;
   }, [shifts]);
 
-  // Get shifts for a specific date using the map
   const getShiftsByDate = useCallback((dateStr) => {
     return shiftsByDate.get(dateStr) || [];
   }, [shiftsByDate]);
 
-  // Handle shift click
   const handleShiftClick = useCallback((shift, day) => {
     if (selectedShift?.id === shift.id) {
       setSelectedShift(null);
@@ -265,31 +284,53 @@ function Attendance() {
     }
   }, [selectedShift]);
 
-  // Close detail panel
   const closeDetail = useCallback(() => {
     setSelectedShift(null);
     setSelectedDay(null);
   }, []);
 
   const todayStr = useMemo(() => getTodayStr(), []);
+  const todayDate = useMemo(() => new Date(), []);
 
-  // Render week view - memoized
+  // Pre-compute week view data
+  const weekViewData = useMemo(() => {
+    return weekDays.map(day => ({
+      day,
+      dateStr: formatDate(day),
+      isToday: formatDate(day) === todayStr,
+      dayShifts: getShiftsByDate(formatDate(day))
+    }));
+  }, [weekDays, getShiftsByDate, todayStr]);
+
+  // Pre-compute month view data
+  const monthViewData = useMemo(() => {
+    return monthDays.map(day => {
+      if (!day) return null;
+      const dateStr = formatDate(day);
+      return {
+        day,
+        dateStr,
+        isToday: dateStr === todayStr,
+        dayShifts: getShiftsByDate(dateStr)
+      };
+    });
+  }, [monthDays, getShiftsByDate, todayStr]);
+
   const weekView = useMemo(() => (
     <div className="week-grid">
-      {weekDays.map((day, index) => (
+      {weekViewData.map((data, index) => (
         <DayCard
           key={index}
-          day={day}
-          shifts={getShiftsByDate(formatDate(day))}
+          day={data.day}
+          dayShifts={data.dayShifts}
           selectedShiftId={selectedShift?.id}
           onShiftClick={handleShiftClick}
-          todayStr={todayStr}
+          isToday={data.isToday}
         />
       ))}
     </div>
-  ), [weekDays, getShiftsByDate, selectedShift?.id, handleShiftClick, todayStr]);
+  ), [weekViewData, selectedShift?.id, handleShiftClick]);
 
-  // Render month view - memoized
   const monthView = useMemo(() => (
     <div className="month-container">
       <div className="month-grid">
@@ -300,53 +341,56 @@ function Attendance() {
           {WEEK_NAMES.map(day => <div key={day} className="month-weekday">{day}</div>)}
         </div>
         <div className="month-days">
-          {monthDays.map((day, index) => {
-            if (!day) return <div key={index} className="month-day empty"></div>;
-            const dateStr = formatDate(day);
-            const isToday = dateStr === todayStr;
-            const dayShifts = getShiftsByDate(dateStr);
-            const hasShifts = dayShifts.length > 0;
-            
+          {monthViewData.map((data, index) => {
+            if (!data) return <div key={index} className="month-day empty"></div>;
             return (
-              <div 
-                key={index} 
-                className={`month-day ${isToday ? "today" : ""} ${hasShifts ? "has-shifts" : ""}`}
-              >
-                <div className="day-number">{day.getDate()}</div>
-                <div className="day-shifts">
-                  {dayShifts.map((shift) => (
-                    <div 
-                      key={shift.id} 
-                      className={`day-shift-item ${selectedShift?.id === shift.id ? "active" : ""}`}
-                      onClick={() => handleShiftClick(shift, day)}
-                    >
-                      {shift.start_time?.slice(0,5)}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <MonthDay
+                key={index}
+                day={data.day}
+                isToday={data.isToday}
+                dayShifts={data.dayShifts}
+                selectedShiftId={selectedShift?.id}
+                onShiftClick={handleShiftClick}
+              />
             );
           })}
         </div>
       </div>
       <DetailPanel shift={selectedShift} day={selectedDay} onClose={closeDetail} />
     </div>
-  ), [monthDays, currentDate, todayStr, getShiftsByDate, selectedShift, selectedDay, handleShiftClick, closeDetail]);
+  ), [monthViewData, currentDate, selectedShift?.id, selectedShift, selectedDay, handleShiftClick, closeDetail]);
+
+  // Don't render if loading
+  if (loading && !refreshing) {
+    return (
+      <div className="attendance-page">
+        <div className="top-bar">
+          <div>
+            <h1 className="title">📅 Lịch làm việc</h1>
+            <p className="subtitle">Đang tải...</p>
+          </div>
+        </div>
+        <div className="loading-skeleton">
+          <div className="skeleton-week-grid">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="skeleton-day-card"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="attendance-page">
-      {toast.show && (
-        <div className={`toast-notification ${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
 
       <div className="top-bar">
         <div>
           <h1 className="title">📅 Lịch làm việc</h1>
           <p className="subtitle">
             {shifts.length} ca làm
-            {refreshing && <span className="refreshing-indicator"> 🔄 Đang cập nhật...</span>}
+            {refreshing && <span className="refreshing-indicator"> 🔄</span>}
           </p>
         </div>
         <div className="view-toggle">
@@ -370,41 +414,25 @@ function Attendance() {
           <button 
             onClick={viewMode === "week" ? goToPreviousWeek : goToPreviousMonth} 
             className="control-btn"
-            disabled={loading || refreshing}
+            disabled={refreshing}
           >
             ◀
           </button>
-          <button 
-            onClick={goToCurrent} 
-            className="control-btn today-btn"
-            disabled={loading || refreshing}
-          >
-            Hôm nay
-          </button>
+          <button onClick={goToCurrent} className="control-btn today-btn">Hôm nay</button>
           <button 
             onClick={viewMode === "week" ? goToNextWeek : goToNextMonth} 
             className="control-btn"
-            disabled={loading || refreshing}
+            disabled={refreshing}
           >
             ▶
           </button>
         </div>
-        <button 
-          className="refresh-btn" 
-          onClick={() => fetchShifts(true)}
-          disabled={loading || refreshing}
-        >
+        <button className="refresh-btn" onClick={() => fetchShifts(true)} disabled={refreshing}>
           🔄
         </button>
       </div>
 
-      {loading ? (
-        <div className="loading">⏳ Đang tải lịch làm việc...</div>
-      ) : viewMode === "week" ? (
-        weekView
-      ) : (
-        monthView
-      )}
+      {viewMode === "week" ? weekView : monthView}
     </div>
   );
 }

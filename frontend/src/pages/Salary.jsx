@@ -4,6 +4,9 @@ import React, {
   useCallback,
   useMemo,
   memo,
+  useRef,
+  useDeferredValue,
+  startTransition,
 } from "react";
 
 import api from "../services/api";
@@ -12,6 +15,54 @@ import "../styles/Salary.css";
 // Constants
 const TOAST_DURATION = 3000;
 const COLORS = ["#28a745", "#ff9800", "#dc3545", "#007bff", "#6f42c1", "#20c997", "#fd7e14", "#e83e8c"];
+const CACHE_KEY = "salary_cache";
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Utility functions
+const formatCurrency = (amount) => {
+  if (!amount && amount !== 0) return "0₫";
+  return Number(amount).toLocaleString("vi-VN") + "₫";
+};
+
+const formatDate = (date) => {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString("vi-VN");
+};
+
+// Cache manager
+const cacheManager = {
+  get: (key) => {
+    try {
+      const cached = localStorage.getItem(`${CACHE_KEY}_${key}`);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < CACHE_DURATION) {
+          return data;
+        }
+      }
+    } catch (e) {
+      console.error("Cache read error:", e);
+    }
+    return null;
+  },
+  set: (key, data) => {
+    try {
+      localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify({
+        data,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.error("Cache write error:", e);
+    }
+  },
+  clear: () => {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(CACHE_KEY)) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+};
 
 // Memoized Components
 const SummaryCard = memo(({ icon, label, value }) => (
@@ -35,14 +86,10 @@ const LoadingSkeleton = memo(() => (
 
 const Toast = memo(({ show, message, type }) => {
   if (!show) return null;
-  return (
-    <div className={`toast-notification ${type}`}>
-      {type === "error" ? "❌ " : "✅ "}{message}
-    </div>
-  );
+  return <div className={`toast-notification ${type}`}>{message}</div>;
 });
 
-const SalaryTableRow = memo(({ item, formatDate, formatCurrency }) => (
+const SalaryTableRow = memo(({ item }) => (
   <tr className={item.holiday_type === "holiday" ? "holiday-row" : ""}>
     <td>{formatDate(item.shift_date)}</td>
     <td>{item.workplace_name}</td>
@@ -54,7 +101,7 @@ const SalaryTableRow = memo(({ item, formatDate, formatCurrency }) => (
   </tr>
 ));
 
-const WorkplaceCard = memo(({ item, formatCurrency }) => (
+const WorkplaceCard = memo(({ item }) => (
   <div className="workplace-salary-card">
     <div className="workplace-name">🏢 {item.workplace_name}</div>
     <div className="workplace-stats">
@@ -65,7 +112,7 @@ const WorkplaceCard = memo(({ item, formatCurrency }) => (
   </div>
 ));
 
-const BarChartItem = memo(({ item, total, color, formatCurrency }) => {
+const BarChartItem = memo(({ item, total, color }) => {
   const percent = total > 0 ? (item.total_salary / total) * 100 : 0;
   return (
     <div className="bar-chart-item">
@@ -102,6 +149,16 @@ function Salary() {
     return localStorage.getItem("salary_view_mode") || "detail";
   });
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  
+  // Refs for abort controllers
+  const abortControllerRef = useRef(null);
+  const cacheKey = useMemo(() => `${selectedYear}_${selectedMonth}`, [selectedYear, selectedMonth]);
+  
+  // Deferred values for heavy computations
+  const deferredSelectedWeek = useDeferredValue(selectedWeek);
+  const deferredSelectedWorkplace = useDeferredValue(selectedWorkplace);
+  const deferredWorkplaceFilter = useDeferredValue(workplaceFilter);
+  const deferredChartFilter = useDeferredValue(chartFilter);
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
@@ -117,7 +174,7 @@ function Salary() {
     localStorage.setItem("salary_view_mode", mode);
   }, []);
 
-  // Years and months
+  // Years and months - memoized
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
@@ -125,7 +182,7 @@ function Salary() {
 
   const months = useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], []);
 
-  // Get weeks in month
+  // Get weeks in month - optimized with useCallback
   const getWeeksInMonth = useCallback((year, month) => {
     const firstDayOfMonth = new Date(year, month - 1, 1);
     const lastDayOfMonth = new Date(year, month, 0);
@@ -174,8 +231,6 @@ function Salary() {
           label,
           startDay,
           endDay,
-          startDate: new Date(year, month - 1, startDay),
-          endDate: new Date(year, month - 1, endDay),
         });
       }
       weekStart.setDate(weekStart.getDate() + 7);
@@ -188,12 +243,20 @@ function Salary() {
     return getWeeksInMonth(selectedYear, selectedMonth);
   }, [selectedYear, selectedMonth, getWeeksInMonth]);
 
-  // Fetch data
+  // Fetch workplaces - optimized with caching
   const fetchWorkplaces = useCallback(async () => {
+    const cacheData = cacheManager.get("workplaces");
+    if (cacheData) {
+      setAllWorkplaces(cacheData);
+      return;
+    }
+    
     try {
       const response = await api.get("/api/workplaces/my");
       if (response.data.success) {
-        setAllWorkplaces(response.data.workplaces || []);
+        const workplaces = response.data.workplaces || [];
+        setAllWorkplaces(workplaces);
+        cacheManager.set("workplaces", workplaces);
       }
     } catch (error) {
       console.error("Lỗi fetch workplaces:", error);
@@ -203,15 +266,36 @@ function Salary() {
     }
   }, [showToast]);
 
+  // Fetch salary data - optimized with caching and abort
   const loadData = useCallback(async (isRefresh = false) => {
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Check cache
+    if (!isRefresh) {
+      const cachedSalary = cacheManager.get(`salary_${cacheKey}`);
+      const cachedWorkplace = cacheManager.get(`workplace_salary_${cacheKey}`);
+      if (cachedSalary && cachedWorkplace) {
+        setSalaryData(cachedSalary);
+        setWorkplaceSalaryData(cachedWorkplace);
+        setLoading(false);
+        return;
+      }
+    }
+    
     const controller = new AbortController();
+    abortControllerRef.current = controller;
     
     try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      startTransition(() => {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+      });
 
       const [salaryRes, workplaceRes] = await Promise.all([
         api.get(`/api/salary/calculate?year=${selectedYear}&month=${selectedMonth}`, {
@@ -224,31 +308,41 @@ function Salary() {
 
       if (salaryRes.data.success) {
         setSalaryData(salaryRes.data);
+        cacheManager.set(`salary_${cacheKey}`, salaryRes.data);
       }
       if (workplaceRes.data.success) {
-        setWorkplaceSalaryData(workplaceRes.data.details || []);
+        const details = workplaceRes.data.details || [];
+        setWorkplaceSalaryData(details);
+        cacheManager.set(`workplace_salary_${cacheKey}`, details);
       }
     } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+      if (error.name !== "AbortError") {
         console.error("Lỗi load data:", error);
         if (error.response?.status !== 401) {
           showToast("Không thể tải dữ liệu lương", "error");
         }
       }
     } finally {
-      if (isRefresh) {
-        setRefreshing(false);
-      } else {
-        setLoading(false);
-      }
+      startTransition(() => {
+        if (isRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
+      });
     }
-    
-    return () => controller.abort();
-  }, [selectedYear, selectedMonth, showToast]);
+  }, [selectedYear, selectedMonth, cacheKey, showToast]);
 
+  // Initial load and cleanup
   useEffect(() => {
     loadData();
     fetchWorkplaces();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [loadData, fetchWorkplaces]);
 
   // Auto refresh every 5 minutes
@@ -261,25 +355,14 @@ function Salary() {
     return () => clearInterval(interval);
   }, [loadData, loading, refreshing]);
 
-  // Format functions
-  const formatCurrency = useCallback((amount) => {
-    if (!amount && amount !== 0) return "0₫";
-    return Number(amount).toLocaleString("vi-VN") + "₫";
-  }, []);
-
-  const formatDate = useCallback((date) => {
-    if (!date) return "";
-    return new Date(date).toLocaleDateString("vi-VN");
-  }, []);
-
-  // Filtered data
+  // Filtered data - optimized with useMemo and deferred values
   const filteredSalaryData = useMemo(() => {
     if (!salaryData) return null;
 
     let details = salaryData.details || [];
 
-    if (selectedWeek !== "all") {
-      const weekInfo = weeksInMonth.find((w) => w.week === Number(selectedWeek));
+    if (deferredSelectedWeek !== "all") {
+      const weekInfo = weeksInMonth.find((w) => w.week === Number(deferredSelectedWeek));
       if (weekInfo) {
         details = details.filter((item) => {
           const day = new Date(item.shift_date).getDate();
@@ -288,43 +371,58 @@ function Salary() {
       }
     }
 
-    if (selectedWorkplace !== "all") {
-      details = details.filter((item) => item.workplace_id === Number(selectedWorkplace));
+    if (deferredSelectedWorkplace !== "all") {
+      details = details.filter((item) => item.workplace_id === Number(deferredSelectedWorkplace));
+    }
+
+    // Calculate totals efficiently
+    let totalSalary = 0;
+    let totalHours = 0;
+    for (const item of details) {
+      totalSalary += Number(item.shift_salary || 0);
+      totalHours += Number(item.work_hours || 0);
     }
 
     return {
       ...salaryData,
       details,
-      total_salary: details.reduce((sum, item) => sum + Number(item.shift_salary || 0), 0),
-      total_hours: details.reduce((sum, item) => sum + Number(item.work_hours || 0), 0),
+      total_salary: totalSalary,
+      total_hours: totalHours,
       total_shifts: details.length,
     };
-  }, [salaryData, selectedWeek, selectedWorkplace, weeksInMonth]);
+  }, [salaryData, deferredSelectedWeek, deferredSelectedWorkplace, weeksInMonth]);
 
   const filteredWorkplaceData = useMemo(() => {
     let data = [...workplaceSalaryData];
-    if (workplaceFilter !== "all") {
-      data = data.filter((item) => item.workplace_id === Number(workplaceFilter));
+    if (deferredWorkplaceFilter !== "all") {
+      data = data.filter((item) => item.workplace_id === Number(deferredWorkplaceFilter));
     }
     return data;
-  }, [workplaceSalaryData, workplaceFilter]);
+  }, [workplaceSalaryData, deferredWorkplaceFilter]);
 
   const chartData = useMemo(() => {
     let data = [...workplaceSalaryData];
-    if (chartFilter !== "all") {
-      data = data.filter((item) => item.workplace_id === Number(chartFilter));
+    if (deferredChartFilter !== "all") {
+      data = data.filter((item) => item.workplace_id === Number(deferredChartFilter));
     }
-    return data;
-  }, [workplaceSalaryData, chartFilter]);
+    // Sort by total salary descending for better visualization
+    return data.sort((a, b) => b.total_salary - a.total_salary);
+  }, [workplaceSalaryData, deferredChartFilter]);
 
-  // Total values
+  // Total values - computed from filtered data
   const totalSalary = filteredSalaryData?.total_salary || 0;
   const totalHours = filteredSalaryData?.total_hours || 0;
   const totalShifts = filteredSalaryData?.total_shifts || 0;
+  
   const chartTotal = useMemo(() => {
-    return chartData.reduce((sum, i) => sum + Number(i.total_salary || 0), 0);
+    let sum = 0;
+    for (const item of chartData) {
+      sum += Number(item.total_salary || 0);
+    }
+    return sum;
   }, [chartData]);
 
+  // Loading state
   if (loading && !refreshing) {
     return (
       <div className="salary-page">
@@ -418,7 +516,7 @@ function Salary() {
       </div>
 
       {/* Detail View */}
-      {viewMode === "detail" && (
+      {viewMode === "detail" && filteredSalaryData && (
         <>
           <div className="summary-cards">
             <SummaryCard icon="💰" label="Tổng lương" value={formatCurrency(totalSalary)} />
@@ -442,14 +540,9 @@ function Salary() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSalaryData?.details?.length > 0 ? (
+                  {filteredSalaryData.details.length > 0 ? (
                     filteredSalaryData.details.map((item, idx) => (
-                      <SalaryTableRow 
-                        key={idx} 
-                        item={item} 
-                        formatDate={formatDate} 
-                        formatCurrency={formatCurrency}
-                      />
+                      <SalaryTableRow key={idx} item={item} />
                     ))
                   ) : (
                     <tr>
@@ -468,7 +561,7 @@ function Salary() {
         <div className="workplace-list">
           {filteredWorkplaceData.length > 0 ? (
             filteredWorkplaceData.map((item, idx) => (
-              <WorkplaceCard key={idx} item={item} formatCurrency={formatCurrency} />
+              <WorkplaceCard key={idx} item={item} />
             ))
           ) : (
             <div className="empty-data">📭 Không có dữ liệu chỗ làm</div>
@@ -497,7 +590,6 @@ function Salary() {
                     item={item} 
                     total={chartTotal}
                     color={COLORS[idx % COLORS.length]}
-                    formatCurrency={formatCurrency}
                   />
                 ))}
               </div>
