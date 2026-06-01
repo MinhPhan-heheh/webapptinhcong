@@ -85,7 +85,6 @@ function Salary() {
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
-
     return Array.from(
       { length: 5 },
       (_, i) => currentYear - 2 + i
@@ -114,45 +113,29 @@ function Salary() {
 
   const getWeeksInMonth = useCallback((year, month) => {
     const firstDayOfMonth = new Date(year, month - 1, 1);
-
     const lastDayOfMonth = new Date(year, month, 0);
-
     const lastDate = lastDayOfMonth.getDate();
-
     let currentDate = new Date(firstDayOfMonth);
-
     let currentDayOfWeek = currentDate.getDay();
-
     let startOfFirstWeek = new Date(currentDate);
 
     if (currentDayOfWeek === 0) {
-      startOfFirstWeek.setDate(
-        currentDate.getDate() - 6
-      );
+      startOfFirstWeek.setDate(currentDate.getDate() - 6);
     } else if (currentDayOfWeek !== 1) {
-      startOfFirstWeek.setDate(
-        currentDate.getDate() -
-          (currentDayOfWeek - 1)
-      );
+      startOfFirstWeek.setDate(currentDate.getDate() - (currentDayOfWeek - 1));
     }
 
     const weeks = [];
-
     let weekStart = new Date(startOfFirstWeek);
-
     let weekNumber = 1;
 
     while (weekStart <= lastDayOfMonth) {
       const weekEnd = new Date(weekStart);
-
       weekEnd.setDate(weekStart.getDate() + 6);
 
       let startDay = weekStart.getDate();
-
       let endDay = weekEnd.getDate();
-
       let startMonth = weekStart.getMonth() + 1;
-
       let endMonth = weekEnd.getMonth() + 1;
 
       if (startMonth < month) {
@@ -165,12 +148,8 @@ function Salary() {
         endMonth = month;
       }
 
-      if (
-        startDay <= lastDate &&
-        startMonth === month
-      ) {
+      if (startDay <= lastDate && startMonth === month) {
         let label = `Tuần ${weekNumber}`;
-
         if (startDay === endDay) {
           label += ` (${startDay}/${month})`;
         } else {
@@ -182,23 +161,12 @@ function Salary() {
           label,
           startDay,
           endDay,
-          startDate: new Date(
-            year,
-            month - 1,
-            startDay
-          ),
-          endDate: new Date(
-            year,
-            month - 1,
-            endDay
-          ),
+          startDate: new Date(year, month - 1, startDay),
+          endDate: new Date(year, month - 1, endDay),
         });
       }
 
-      weekStart.setDate(
-        weekStart.getDate() + 7
-      );
-
+      weekStart.setDate(weekStart.getDate() + 7);
       weekNumber++;
     }
 
@@ -206,15 +174,8 @@ function Salary() {
   }, []);
 
   const weeksInMonth = useMemo(() => {
-    return getWeeksInMonth(
-      selectedYear,
-      selectedMonth
-    );
-  }, [
-    selectedYear,
-    selectedMonth,
-    getWeeksInMonth,
-  ]);
+    return getWeeksInMonth(selectedYear, selectedMonth);
+  }, [selectedYear, selectedMonth, getWeeksInMonth]);
 
   // =========================
   // LOAD DATA
@@ -222,62 +183,40 @@ function Salary() {
 
   const fetchWorkplaces = useCallback(async () => {
     try {
-      const response = await api.get(
-        "/api/workplaces/my"
-      );
+      const response = await api.get("/api/workplaces/my");
 
       if (response.data.success) {
-        setAllWorkplaces(
-          response.data.workplaces || []
-        );
+        setAllWorkplaces(response.data.workplaces || []);
       }
     } catch (error) {
-      console.error(
-        "Lỗi fetch workplaces:",
-        error
-      );
+      console.error("Lỗi fetch workplaces:", error);
+      showToast("❌ Không thể tải danh sách chỗ làm", "error");
     }
-  }, []);
+  }, [showToast]);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const [salaryRes, workplaceRes] =
-        await Promise.all([
-          api.get(
-            `/api/salary/calculate?year=${selectedYear}&month=${selectedMonth}`
-          ),
-
-          api.get(
-            `/api/salary/by-workplace?year=${selectedYear}&month=${selectedMonth}`
-          ),
-        ]);
+      const [salaryRes, workplaceRes] = await Promise.all([
+        api.get(`/api/salary/calculate?year=${selectedYear}&month=${selectedMonth}`),
+        api.get(`/api/salary/by-workplace?year=${selectedYear}&month=${selectedMonth}`),
+      ]);
 
       if (salaryRes.data.success) {
         setSalaryData(salaryRes.data);
       }
 
       if (workplaceRes.data.success) {
-        setWorkplaceSalaryData(
-          workplaceRes.data.details || []
-        );
+        setWorkplaceSalaryData(workplaceRes.data.details || []);
       }
     } catch (error) {
       console.error("Lỗi load data:", error);
-
-      showToast(
-        "Không thể tải dữ liệu",
-        "error"
-      );
+      showToast("❌ Không thể tải dữ liệu lương", "error");
     } finally {
       setLoading(false);
     }
-  }, [
-    selectedYear,
-    selectedMonth,
-    showToast,
-  ]);
+  }, [selectedYear, selectedMonth, showToast]);
 
   useEffect(() => {
     loadData();
@@ -288,27 +227,16 @@ function Salary() {
   // FORMAT
   // =========================
 
-  const formatCurrency = useCallback(
-    (amount) => {
-      if (!amount && amount !== 0) {
-        return "0₫";
-      }
-
-      return (
-        Number(amount).toLocaleString(
-          "vi-VN"
-        ) + "₫"
-      );
-    },
-    []
-  );
+  const formatCurrency = useCallback((amount) => {
+    if (!amount && amount !== 0) {
+      return "0₫";
+    }
+    return Number(amount).toLocaleString("vi-VN") + "₫";
+  }, []);
 
   const formatDate = useCallback((date) => {
     if (!date) return "";
-
-    return new Date(date).toLocaleDateString(
-      "vi-VN"
-    );
+    return new Date(date).toLocaleDateString("vi-VN");
   }, []);
 
   // =========================
@@ -322,57 +250,28 @@ function Salary() {
 
     // lọc tuần
     if (selectedWeek !== "all") {
-      const weekInfo = weeksInMonth.find(
-        (w) =>
-          w.week === Number(selectedWeek)
-      );
-
+      const weekInfo = weeksInMonth.find((w) => w.week === Number(selectedWeek));
       if (weekInfo) {
         details = details.filter((item) => {
-          const day = new Date(
-            item.shift_date
-          ).getDate();
-
-          return (
-            day >= weekInfo.startDay &&
-            day <= weekInfo.endDay
-          );
+          const day = new Date(item.shift_date).getDate();
+          return day >= weekInfo.startDay && day <= weekInfo.endDay;
         });
       }
     }
 
     // lọc chỗ làm
     if (selectedWorkplace !== "all") {
-      details = details.filter(
-        (item) =>
-          item.workplace_id ===
-          Number(selectedWorkplace)
-      );
+      details = details.filter((item) => item.workplace_id === Number(selectedWorkplace));
     }
 
     return {
       ...salaryData,
       details,
-      total_salary: details.reduce(
-        (sum, item) =>
-          sum + Number(item.shift_salary || 0),
-        0
-      ),
-
-      total_hours: details.reduce(
-        (sum, item) =>
-          sum + Number(item.work_hours || 0),
-        0
-      ),
-
+      total_salary: details.reduce((sum, item) => sum + Number(item.shift_salary || 0), 0),
+      total_hours: details.reduce((sum, item) => sum + Number(item.work_hours || 0), 0),
       total_shifts: details.length,
     };
-  }, [
-    salaryData,
-    selectedWeek,
-    selectedWorkplace,
-    weeksInMonth,
-  ]);
+  }, [salaryData, selectedWeek, selectedWorkplace, weeksInMonth]);
 
   // =========================
   // WORKPLACE DATA
@@ -380,20 +279,11 @@ function Salary() {
 
   const filteredWorkplaceData = useMemo(() => {
     let data = [...workplaceSalaryData];
-
     if (workplaceFilter !== "all") {
-      data = data.filter(
-        (item) =>
-          item.workplace_id ===
-          Number(workplaceFilter)
-      );
+      data = data.filter((item) => item.workplace_id === Number(workplaceFilter));
     }
-
     return data;
-  }, [
-    workplaceSalaryData,
-    workplaceFilter,
-  ]);
+  }, [workplaceSalaryData, workplaceFilter]);
 
   // =========================
   // CHART DATA
@@ -401,15 +291,9 @@ function Salary() {
 
   const chartData = useMemo(() => {
     let data = [...workplaceSalaryData];
-
     if (chartFilter !== "all") {
-      data = data.filter(
-        (item) =>
-          item.workplace_id ===
-          Number(chartFilter)
-      );
+      data = data.filter((item) => item.workplace_id === Number(chartFilter));
     }
-
     return data;
   }, [workplaceSalaryData, chartFilter]);
 
@@ -417,23 +301,14 @@ function Salary() {
   // TOTAL
   // =========================
 
-  const totalSalary =
-    filteredSalaryData?.total_salary || 0;
-
-  const totalHours =
-    filteredSalaryData?.total_hours || 0;
-
-  const totalShifts =
-    filteredSalaryData?.total_shifts || 0;
+  const totalSalary = filteredSalaryData?.total_salary || 0;
+  const totalHours = filteredSalaryData?.total_hours || 0;
+  const totalShifts = filteredSalaryData?.total_shifts || 0;
 
   const currentWeekInfo = useMemo(() => {
     if (selectedWeek !== "all") {
-      return weeksInMonth.find(
-        (w) =>
-          w.week === Number(selectedWeek)
-      );
+      return weeksInMonth.find((w) => w.week === Number(selectedWeek));
     }
-
     return null;
   }, [selectedWeek, weeksInMonth]);
 
@@ -445,11 +320,8 @@ function Salary() {
     return (
       <div className="salary-page">
         <div className="salary-header">
-          <h1 className="title">
-            💰 Quản lý lương
-          </h1>
+          <h1 className="title">💰 Quản lý lương</h1>
         </div>
-
         <LoadingSkeleton />
       </div>
     );
@@ -458,94 +330,54 @@ function Salary() {
   return (
     <div className="salary-page">
       {toast.show && (
-        <div
-          className={`toast-notification ${toast.type}`}
-        >
-          {toast.type === "error"
-            ? "❌ "
-            : "✅ "}
-
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === "error" ? "❌ " : "✅ "}
           {toast.message}
         </div>
       )}
 
       <div className="salary-header">
-        <h1 className="title">
-          💰 Quản lý lương
-        </h1>
+        <h1 className="title">💰 Quản lý lương</h1>
       </div>
 
       {/* FILTER */}
-
       <div className="filter-bar">
         <div className="filter-group">
           <label>NĂM</label>
-
           <select
             value={selectedYear}
-            onChange={(e) =>
-              setSelectedYear(
-                Number(e.target.value)
-              )
-            }
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
           >
             {years.map((year) => (
-              <option
-                key={year}
-                value={year}
-              >
-                Năm {year}
-              </option>
+              <option key={year} value={year}>Năm {year}</option>
             ))}
           </select>
         </div>
 
         <div className="filter-group">
           <label>THÁNG</label>
-
           <select
             value={selectedMonth}
             onChange={(e) => {
-              setSelectedMonth(
-                Number(e.target.value)
-              );
-
+              setSelectedMonth(Number(e.target.value));
               setSelectedWeek("all");
             }}
           >
             {months.map((month) => (
-              <option
-                key={month}
-                value={month}
-              >
-                Tháng {month}
-              </option>
+              <option key={month} value={month}>Tháng {month}</option>
             ))}
           </select>
         </div>
 
         <div className="filter-group">
           <label>📅 TUẦN</label>
-
           <select
             value={selectedWeek}
-            onChange={(e) =>
-              setSelectedWeek(
-                e.target.value
-              )
-            }
+            onChange={(e) => setSelectedWeek(e.target.value)}
           >
-            <option value="all">
-              📋 Tất cả
-            </option>
-
+            <option value="all">📋 Tất cả</option>
             {weeksInMonth.map((week) => (
-              <option
-                key={week.week}
-                value={week.week}
-              >
-                {week.label}
-              </option>
+              <option key={week.week} value={week.week}>{week.label}</option>
             ))}
           </select>
         </div>
@@ -553,26 +385,13 @@ function Salary() {
         {viewMode === "detail" && (
           <div className="filter-group">
             <label>🏢 CHỖ LÀM</label>
-
             <select
               value={selectedWorkplace}
-              onChange={(e) =>
-                setSelectedWorkplace(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setSelectedWorkplace(e.target.value)}
             >
-              <option value="all">
-                📋 Tất cả
-              </option>
-
+              <option value="all">📋 Tất cả</option>
               {allWorkplaces.map((w) => (
-                <option
-                  key={w.id}
-                  value={w.id}
-                >
-                  🏢 {w.name}
-                </option>
+                <option key={w.id} value={w.id}>🏢 {w.name}</option>
               ))}
             </select>
           </div>
@@ -580,79 +399,38 @@ function Salary() {
       </div>
 
       {/* TAB */}
-
       <div className="view-toggle">
         <button
-          className={`view-btn ${
-            viewMode === "detail"
-              ? "active"
-              : ""
-          }`}
-          onClick={() =>
-            setViewMode("detail")
-          }
+          className={`view-btn ${viewMode === "detail" ? "active" : ""}`}
+          onClick={() => setViewMode("detail")}
         >
           📋 Chi tiết
         </button>
-
         <button
-          className={`view-btn ${
-            viewMode === "workplace"
-              ? "active"
-              : ""
-          }`}
-          onClick={() =>
-            setViewMode("workplace")
-          }
+          className={`view-btn ${viewMode === "workplace" ? "active" : ""}`}
+          onClick={() => setViewMode("workplace")}
         >
           🏢 Theo chỗ làm
         </button>
-
         <button
-          className={`view-btn ${
-            viewMode === "chart"
-              ? "active"
-              : ""
-          }`}
-          onClick={() =>
-            setViewMode("chart")
-          }
+          className={`view-btn ${viewMode === "chart" ? "active" : ""}`}
+          onClick={() => setViewMode("chart")}
         >
           📊 Biểu đồ
         </button>
       </div>
 
       {/* DETAIL */}
-
       {viewMode === "detail" && (
         <>
           <div className="summary-cards">
-            <SummaryCard
-              icon="💰"
-              label="Tổng lương"
-              value={formatCurrency(
-                totalSalary
-              )}
-            />
-
-            <SummaryCard
-              icon="⏰"
-              label="Tổng giờ"
-              value={`${totalHours} giờ`}
-            />
-
-            <SummaryCard
-              icon="📋"
-              label="Tổng ca"
-              value={`${totalShifts} ca`}
-            />
+            <SummaryCard icon="💰" label="Tổng lương" value={formatCurrency(totalSalary)} />
+            <SummaryCard icon="⏰" label="Tổng giờ" value={`${totalHours} giờ`} />
+            <SummaryCard icon="📋" label="Tổng ca" value={`${totalShifts} ca`} />
           </div>
 
           <div className="salary-table-container">
-            <h3 className="table-title">
-              📋 Chi tiết ca làm
-            </h3>
-
+            <h3 className="table-title">📋 Chi tiết ca làm</h3>
             <div className="table-wrapper">
               <table className="salary-table">
                 <thead>
@@ -666,72 +444,22 @@ function Salary() {
                     <th>Thành tiền</th>
                   </tr>
                 </thead>
-
                 <tbody>
-                  {filteredSalaryData?.details
-                    ?.length > 0 ? (
-                    filteredSalaryData.details.map(
-                      (item, idx) => (
-                        <tr
-                          key={idx}
-                          className={
-                            item.holiday_type ===
-                            "holiday"
-                              ? "holiday-row"
-                              : ""
-                          }
-                        >
-                          <td>
-                            {formatDate(
-                              item.shift_date
-                            )}
-                          </td>
-
-                          <td>
-                            {
-                              item.workplace_name
-                            }
-                          </td>
-
-                          <td>
-                            {item.start_time} -{" "}
-                            {item.end_time}
-                          </td>
-
-                          <td>
-                            {item.work_hours}h
-                          </td>
-
-                          <td>
-                            {formatCurrency(
-                              item.base_salary
-                            )}
-                            /h
-                          </td>
-
-                          <td>
-                            {item.holiday_rate ===
-                            1
-                              ? ""
-                              : `x${item.holiday_rate}`}
-                          </td>
-
-                          <td className="salary-amount">
-                            {formatCurrency(
-                              item.shift_salary
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    )
+                  {filteredSalaryData?.details?.length > 0 ? (
+                    filteredSalaryData.details.map((item, idx) => (
+                      <tr key={idx} className={item.holiday_type === "holiday" ? "holiday-row" : ""}>
+                        <td>{formatDate(item.shift_date)}</td>
+                        <td>{item.workplace_name}</td>
+                        <td>{item.start_time} - {item.end_time}</td>
+                        <td>{item.work_hours}h</td>
+                        <td>{formatCurrency(item.base_salary)}/h</td>
+                        <td>{item.holiday_rate === 1 ? "" : `x${item.holiday_rate}`}</td>
+                        <td className="salary-amount">{formatCurrency(item.shift_salary)}</td>
+                      </tr>
+                    ))
                   ) : (
                     <tr>
-                      <td
-                        colSpan="7"
-                        className="empty-data"
-                      >
-                        Không có dữ liệu
-                      </td>
+                      <td colSpan="7" className="empty-data">📭 Không có dữ liệu ca làm</td>
                     </tr>
                   )}
                 </tbody>
@@ -742,110 +470,93 @@ function Salary() {
       )}
 
       {/* WORKPLACE */}
-
       {viewMode === "workplace" && (
         <div className="workplace-list">
-          {filteredWorkplaceData.length >
-          0 ? (
-            filteredWorkplaceData.map(
-              (item, idx) => (
-                <div
-                  key={idx}
-                  className="workplace-salary-card"
-                >
-                  <div className="workplace-name">
-                    {item.workplace_name}
-                  </div>
-
-                  <div className="workplace-stats">
-                    <div className="stat">
-                      📋 {item.total_shifts} ca
-                    </div>
-
-                    <div className="stat">
-                      ⏰ {item.total_hours} giờ
-                    </div>
-
-                    <div className="stat salary">
-                      💰{" "}
-                      {formatCurrency(
-                        item.total_salary
-                      )}
-                    </div>
-                  </div>
+          {filteredWorkplaceData.length > 0 ? (
+            filteredWorkplaceData.map((item, idx) => (
+              <div key={idx} className="workplace-salary-card">
+                <div className="workplace-name">🏢 {item.workplace_name}</div>
+                <div className="workplace-stats">
+                  <div className="stat">📋 {item.total_shifts} ca</div>
+                  <div className="stat">⏰ {item.total_hours} giờ</div>
+                  <div className="stat salary">💰 {formatCurrency(item.total_salary)}</div>
                 </div>
-              )
-            )
+              </div>
+            ))
           ) : (
-            <div className="empty-data">
-              Không có dữ liệu
-            </div>
+            <div className="empty-data">📭 Không có dữ liệu chỗ làm</div>
           )}
         </div>
       )}
 
-      {/* CHART */}
-
+      {/* CHART - BIỂU ĐỒ ĐÃ ĐƯỢC SỬA LẠI */}
       {viewMode === "chart" && (
         <div className="chart-container">
-          <div className="pie-legend">
-            {chartData.map((item, idx) => {
-              const total =
-                chartData.reduce(
-                  (sum, i) =>
-                    sum +
-                    Number(
-                      i.total_salary || 0
-                    ),
-                  0
-                );
-
-              const percent =
-                total > 0
-                  ? (
-                      (item.total_salary /
-                        total) *
-                      100
-                    ).toFixed(1)
-                  : 0;
-
-              return (
-                <div
-                  key={idx}
-                  className="legend-item"
-                >
-                  <div
-                    className="legend-color"
-                    style={{
-                      background:
-                        colors[
-                          idx %
-                            colors.length
-                        ],
-                    }}
-                  ></div>
-
-                  <div className="legend-info">
-                    <span className="legend-name">
-                      {
-                        item.workplace_name
-                      }
-                    </span>
-
-                    <span className="legend-value">
-                      {formatCurrency(
-                        item.total_salary
-                      )}
-                    </span>
-
-                    <span className="legend-percent">
-                      ({percent}%)
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="chart-title-section">
+            <h3>📊 Biểu đồ phân bổ lương theo chỗ làm</h3>
+            {chartFilter !== "all" && (
+              <button 
+                className="chart-reset-btn"
+                onClick={() => setChartFilter("all")}
+              >
+                🔄 Xem tất cả
+              </button>
+            )}
           </div>
+          
+          {chartData.length > 0 ? (
+            <div className="chart-wrapper">
+              {/* Biểu đồ dạng thanh ngang */}
+              <div className="bar-chart">
+                {chartData.map((item, idx) => {
+                  const total = chartData.reduce((sum, i) => sum + Number(i.total_salary || 0), 0);
+                  const percent = total > 0 ? (item.total_salary / total) * 100 : 0;
+                  return (
+                    <div key={idx} className="bar-chart-item">
+                      <div className="bar-chart-label">
+                        <span className="bar-chart-name">{item.workplace_name}</span>
+                        <span className="bar-chart-value">{formatCurrency(item.total_salary)}</span>
+                      </div>
+                      <div className="bar-chart-bar-wrapper">
+                        <div 
+                          className="bar-chart-bar"
+                          style={{ 
+                            width: `${percent}%`,
+                            backgroundColor: colors[idx % colors.length]
+                          }}
+                        >
+                          <span className="bar-chart-percent">{percent.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Chú thích màu sắc */}
+              <div className="pie-legend">
+                {chartData.map((item, idx) => {
+                  const total = chartData.reduce((sum, i) => sum + Number(i.total_salary || 0), 0);
+                  const percent = total > 0 ? ((item.total_salary / total) * 100).toFixed(1) : 0;
+                  return (
+                    <div key={idx} className="legend-item">
+                      <div
+                        className="legend-color"
+                        style={{ background: colors[idx % colors.length] }}
+                      ></div>
+                      <div className="legend-info">
+                        <span className="legend-name">{item.workplace_name}</span>
+                        <span className="legend-value">{formatCurrency(item.total_salary)}</span>
+                        <span className="legend-percent">({percent}%)</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="empty-data">📭 Không có dữ liệu để hiển thị biểu đồ</div>
+          )}
         </div>
       )}
     </div>

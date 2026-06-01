@@ -41,7 +41,7 @@ const ShiftCard = memo(({ shift, onEdit, onDelete }) => (
     </div>
     <div className="shift-time">⏰ {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}</div>
     <div className="shift-location">📍 {shift.workplace_name}</div>
-    {shift.holiday_type === 'holiday' && <div className="holiday-badge">🎉 Ngày lễ</div>}
+    {shift.holiday_type === 'holiday' && <div className="holiday-badge">🎉 Ngày lễ (x2)</div>}
   </div>
 ));
 
@@ -105,7 +105,7 @@ function Shift() {
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 2500);
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
   }, []);
 
   // Navigation
@@ -137,12 +137,10 @@ function Shift() {
   // Fetch data
   const fetchWorkplaces = useCallback(async () => {
     try {
-      // ĐÃ SỬA: work-places -> workplaces
       const response = await api.get("/api/workplaces/my");
       setWorkplaces(response.data.workplaces || []);
     } catch (error) {
-      console.error("Lỗi fetch workplaces:", error);
-      showToast("Không thể tải danh sách chỗ làm", "error");
+      showToast("❌ Không thể tải danh sách chỗ làm", "error");
     }
   }, [showToast]);
 
@@ -150,7 +148,6 @@ function Shift() {
     setLoading(true);
     try {
       const params = selectedWorkplace ? { workplace_id: selectedWorkplace } : {};
-      // ĐÃ SỬA: work-places -> workplaces
       const response = await api.get("/api/workplaces/shifts/my", { params });
       
       if (response.data.success) {
@@ -163,12 +160,12 @@ function Shift() {
         setShifts([]);
       }
     } catch (error) {
-      console.error("Lỗi fetch shifts:", error);
       setShifts([]);
+      showToast("❌ Không thể tải danh sách ca làm", "error");
     } finally {
       setLoading(false);
     }
-  }, [selectedWorkplace]);
+  }, [selectedWorkplace, showToast]);
 
   useEffect(() => {
     fetchShifts();
@@ -188,7 +185,6 @@ function Shift() {
   }, []);
 
   const openAddForm = useCallback((dateStr) => {
-    console.log("📅 Mở form với ngày:", dateStr);
     setSelectedDate(dateStr);
     setEditingShift(null);
     setFormData({
@@ -249,11 +245,9 @@ function Shift() {
       let response;
       
       if (editingShift) {
-        // ĐÃ SỬA: work-places -> workplaces
         response = await api.put(`/api/workplaces/shifts/${editingShift.id}`, submitData);
         showToast("✅ Cập nhật ca thành công!", "success");
       } else {
-        // ĐÃ SỬA: work-places -> workplaces
         response = await api.post("/api/workplaces/shifts/create", submitData);
         showToast("✅ Đăng ký ca làm thành công!", "success");
       }
@@ -266,7 +260,6 @@ function Shift() {
         showToast(`❌ ${response.data.message || "Có lỗi xảy ra"}`, "error");
       }
     } catch (error) {
-      console.error("Error saving shift:", error);
       showToast(`❌ ${error.response?.data?.message || "Lỗi tạo/cập nhật ca"}`, "error");
     }
   }, [selectedDate, formData, editingShift, resetForm, fetchShifts, showToast]);
@@ -275,7 +268,6 @@ function Shift() {
     if (!window.confirm("⚠️ Bạn có chắc chắn muốn xóa ca làm này?")) return;
     
     try {
-      // ĐÃ SỬA: work-places -> workplaces
       const response = await api.delete(`/api/workplaces/shifts/${id}`);
       if (response.data.success) {
         showToast("✅ Xóa ca thành công!", "success");
@@ -284,7 +276,6 @@ function Shift() {
         showToast(`❌ ${response.data.message}`, "error");
       }
     } catch (error) {
-      console.error("Error deleting shift:", error);
       showToast("❌ Lỗi xóa ca", "error");
     }
   }, [fetchShifts, showToast]);
@@ -429,7 +420,7 @@ function Shift() {
                 onChange={(e) => setFormData(prev => ({...prev, holiday_type: e.target.value}))}
               >
                 <option value="normal">📅 Ngày thường</option>
-                <option value="holiday">🎉 Ngày lễ</option>
+                <option value="holiday">🎉 Ngày lễ (x2)</option>
               </select>
             </div>
 

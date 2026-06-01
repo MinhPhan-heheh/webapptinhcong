@@ -30,6 +30,7 @@ function Profile() {
     type: "",
   });
 
+  // SỬA: tăng thời gian hiển thị toast lên 3 giây
   const showToast = useCallback((message, type = "success") => {
     setToast({
       show: true,
@@ -43,7 +44,7 @@ function Profile() {
         message: "",
         type: "",
       });
-    }, 2000);
+    }, 3000);
   }, []);
 
   // ================= FETCH PROFILE =================
@@ -51,7 +52,6 @@ function Profile() {
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
-      // ĐÃ SỬA: thêm /api và dấu / ở cuối
       const response = await api.get("/api/profile/");
 
       if (response.data.success) {
@@ -65,12 +65,8 @@ function Profile() {
         setAvatarError(false);
       }
     } catch (error) {
-      console.error(
-        "Lỗi fetch profile:",
-        error.response?.data || error.message
-      );
-
-      showToast("Không thể tải thông tin hồ sơ", "error");
+      console.error("Lỗi fetch profile:", error.response?.data || error.message);
+      showToast("❌ Không thể tải thông tin hồ sơ", "error");
     } finally {
       setLoading(false);
     }
@@ -86,20 +82,15 @@ function Profile() {
     e.preventDefault();
 
     try {
-      // ĐÃ SỬA: thêm /api và dấu / ở cuối
       const response = await api.put("/api/profile/", formData);
 
       if (response.data.success) {
         setUser(response.data.user);
         setEditing(false);
-
-        showToast("Cập nhật hồ sơ thành công!");
+        showToast("✅ Cập nhật hồ sơ thành công!", "success");
       }
     } catch (error) {
-      showToast(
-        error.response?.data?.message || "Lỗi cập nhật",
-        "error"
-      );
+      showToast("❌ " + (error.response?.data?.message || "Lỗi cập nhật"), "error");
     }
   };
 
@@ -109,20 +100,16 @@ function Profile() {
     e.preventDefault();
 
     if (passwordData.new_password !== passwordData.confirm_password) {
-      showToast("Mật khẩu xác nhận không khớp", "error");
+      showToast("❌ Mật khẩu xác nhận không khớp", "error");
       return;
     }
 
     if (passwordData.new_password.length < 6) {
-      showToast(
-        "Mật khẩu mới phải có ít nhất 6 ký tự",
-        "error"
-      );
+      showToast("❌ Mật khẩu mới phải có ít nhất 6 ký tự", "error");
       return;
     }
 
     try {
-      // ĐÃ SỬA: thêm /api
       const response = await api.put("/api/profile/password", {
         current_password: passwordData.current_password,
         new_password: passwordData.new_password,
@@ -130,20 +117,15 @@ function Profile() {
 
       if (response.data.success) {
         setChangingPassword(false);
-
         setPasswordData({
           current_password: "",
           new_password: "",
           confirm_password: "",
         });
-
-        showToast("Đổi mật khẩu thành công!");
+        showToast("✅ Đổi mật khẩu thành công!", "success");
       }
     } catch (error) {
-      showToast(
-        error.response?.data?.message || "Lỗi đổi mật khẩu",
-        "error"
-      );
+      showToast("❌ " + (error.response?.data?.message || "Lỗi đổi mật khẩu"), "error");
     }
   };
 
@@ -154,21 +136,19 @@ function Profile() {
 
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        showToast("Ảnh không được vượt quá 2MB", "error");
+        showToast("❌ Ảnh không được vượt quá 2MB", "error");
         return;
       }
 
       if (!file.type.match(/image\/(jpeg|jpg|png|gif|webp)/)) {
-        showToast(
-          "Chỉ chấp nhận file ảnh (jpg, png, gif, webp)",
-          "error"
-        );
+        showToast("❌ Chỉ chấp nhận file ảnh (jpg, png, gif, webp)", "error");
         return;
       }
 
       setSelectedFile(file);
       setPreviewUrl(URL.createObjectURL(file));
       setAvatarError(false);
+      showToast("✅ Đã chọn ảnh, nhấn 'Lưu ảnh' để cập nhật", "success");
     }
   };
 
@@ -183,7 +163,6 @@ function Profile() {
     formDataUpload.append("avatar", selectedFile);
 
     try {
-      // ĐÃ SỬA: thêm /api
       const response = await api.post("/api/profile/avatar", formDataUpload, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -195,21 +174,12 @@ function Profile() {
         setSelectedFile(null);
         setPreviewUrl(null);
         setAvatarError(false);
-
-        showToast("Cập nhật ảnh đại diện thành công!");
-
+        showToast("✅ Cập nhật ảnh đại diện thành công!", "success");
         fetchProfile();
       }
     } catch (error) {
-      console.error(
-        "Upload error:",
-        error.response?.data || error.message
-      );
-
-      showToast(
-        error.response?.data?.message || "Lỗi upload ảnh",
-        "error"
-      );
+      console.error("Upload error:", error.response?.data || error.message);
+      showToast("❌ " + (error.response?.data?.message || "Lỗi upload ảnh"), "error");
     } finally {
       setUploading(false);
     }
@@ -219,20 +189,15 @@ function Profile() {
 
   const handleRemoveAvatar = async () => {
     try {
-      // ĐÃ SỬA: thêm /api
       const response = await api.delete("/api/profile/avatar");
 
       if (response.data.success) {
         setUser(response.data.user);
         setAvatarError(false);
-
-        showToast("Xóa ảnh đại diện thành công!");
+        showToast("✅ Xóa ảnh đại diện thành công!", "success");
       }
     } catch (error) {
-      showToast(
-        error.response?.data?.message || "Lỗi xóa ảnh",
-        "error"
-      );
+      showToast("❌ " + (error.response?.data?.message || "Lỗi xóa ảnh"), "error");
     }
   };
 
@@ -243,11 +208,9 @@ function Profile() {
 
     if (user?.avatar && !avatarError) {
       let avatarPath = user.avatar;
-      // Nếu avatar đã có URL đầy đủ thì dùng luôn
       if (avatarPath.startsWith("http")) {
         return avatarPath;
       }
-      // Nếu là đường dẫn tương đối, thêm base URL
       return `https://workshift-o5sm.onrender.com${avatarPath}`;
     }
     return null;
@@ -268,29 +231,21 @@ function Profile() {
   const hasAvatar = user?.avatar && !avatarError;
 
   if (loading) {
-    return (
-      <div className="profile-loading">
-        Đang tải...
-      </div>
-    );
+    return <div className="profile-loading">Đang tải...</div>;
   }
 
   return (
     <div className="profile-page">
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
-          {toast.type === "success" ? "✅ " : "❌ "}
           {toast.message}
         </div>
       )}
 
       <div className="profile-container">
-        <h1 className="profile-title">
-          👤 Hồ sơ cá nhân
-        </h1>
+        <h1 className="profile-title">👤 Hồ sơ cá nhân</h1>
 
         {/* ================= AVATAR ================= */}
-
         <div className="avatar-section">
           <div className="avatar-wrapper">
             {hasAvatar || previewUrl ? (
@@ -301,15 +256,9 @@ function Profile() {
                 onError={() => setAvatarError(true)}
               />
             ) : (
-              <div className="profile-avatar-default">
-                {getInitials()}
-              </div>
+              <div className="profile-avatar-default">{getInitials()}</div>
             )}
-
-            <label
-              className="avatar-upload-label"
-              title="Chọn ảnh đại diện"
-            >
+            <label className="avatar-upload-label" title="Chọn ảnh đại diện">
               📷
               <input
                 type="file"
@@ -326,59 +275,38 @@ function Profile() {
               onClick={handleUploadAvatar}
               disabled={uploading}
             >
-              {uploading
-                ? "⏳ Đang tải..."
-                : "💾 Lưu ảnh"}
+              {uploading ? "⏳ Đang tải..." : "💾 Lưu ảnh"}
             </button>
           )}
 
           {user?.avatar && !selectedFile && (
-            <button
-              className="avatar-btn remove-avatar-btn"
-              onClick={handleRemoveAvatar}
-            >
+            <button className="avatar-btn remove-avatar-btn" onClick={handleRemoveAvatar}>
               🗑️ Xóa ảnh
             </button>
           )}
 
-          <div className="avatar-note">
-            Chấp nhận file JPG, PNG, GIF
-            (tối đa 2MB)
-          </div>
+          <div className="avatar-note">Chấp nhận file JPG, PNG, GIF (tối đa 2MB)</div>
         </div>
 
         {/* ================= PROFILE INFO ================= */}
-
         <div className="profile-info-card">
           <div className="card-header">
             <h2>📋 Thông tin cá nhân</h2>
-
             {!editing && (
-              <button
-                className="edit-btn"
-                onClick={() => setEditing(true)}
-              >
+              <button className="edit-btn" onClick={() => setEditing(true)}>
                 ✏️ Sửa
               </button>
             )}
           </div>
 
           {editing ? (
-            <form
-              onSubmit={handleUpdateProfile}
-              className="profile-form"
-            >
+            <form onSubmit={handleUpdateProfile} className="profile-form">
               <div className="form-group">
                 <label>Họ và tên</label>
                 <input
                   type="text"
                   value={formData.full_name}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      full_name: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                   required
                   placeholder="Nhập họ và tên"
                 />
@@ -389,38 +317,21 @@ function Profile() {
                 <input
                   type="tel"
                   value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      phone: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Nhập số điện thoại"
                 />
               </div>
 
               <div className="form-group">
                 <label>Email</label>
-                <input
-                  type="email"
-                  value={user?.email || ""}
-                  disabled
-                  className="disabled-input"
-                />
+                <input type="email" value={user?.email || ""} disabled className="disabled-input" />
               </div>
 
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => setEditing(false)}
-                >
+                <button type="button" className="cancel-btn" onClick={() => setEditing(false)}>
                   Hủy
                 </button>
-                <button
-                  type="submit"
-                  className="save-btn"
-                >
+                <button type="submit" className="save-btn">
                   Lưu thay đổi
                 </button>
               </div>
@@ -428,59 +339,27 @@ function Profile() {
           ) : (
             <div className="profile-details">
               <div className="detail-row">
-                <span className="detail-label">
-                  👤 Họ và tên
-                </span>
-                <span className="detail-value">
-                  {user?.full_name || "Chưa cập nhật"}
+                <span className="detail-label">👤 Họ và tên</span>
+                <span className="detail-value">{user?.full_name || "Chưa cập nhật"}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">📧 Email</span>
+                <span className="detail-value">{user?.email}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">📞 Số điện thoại</span>
+                <span className="detail-value">{user?.phone || "Chưa cập nhật"}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">✅ Trạng thái</span>
+                <span className={`verify-status ${user?.is_verified ? "verified" : "unverified"}`}>
+                  {user?.is_verified ? "Đã xác thực" : "Chưa xác thực"}
                 </span>
               </div>
-
               <div className="detail-row">
-                <span className="detail-label">
-                  📧 Email
-                </span>
+                <span className="detail-label">📅 Ngày tham gia</span>
                 <span className="detail-value">
-                  {user?.email}
-                </span>
-              </div>
-
-              <div className="detail-row">
-                <span className="detail-label">
-                  📞 Số điện thoại
-                </span>
-                <span className="detail-value">
-                  {user?.phone || "Chưa cập nhật"}
-                </span>
-              </div>
-
-              <div className="detail-row">
-                <span className="detail-label">
-                  ✅ Trạng thái
-                </span>
-                <span
-                  className={`verify-status ${
-                    user?.is_verified
-                      ? "verified"
-                      : "unverified"
-                  }`}
-                >
-                  {user?.is_verified
-                    ? "Đã xác thực"
-                    : "Chưa xác thực"}
-                </span>
-              </div>
-
-              <div className="detail-row">
-                <span className="detail-label">
-                  📅 Ngày tham gia
-                </span>
-                <span className="detail-value">
-                  {user?.created_at
-                    ? new Date(
-                        user.created_at
-                      ).toLocaleDateString("vi-VN")
-                    : ""}
+                  {user?.created_at ? new Date(user.created_at).toLocaleDateString("vi-VN") : ""}
                 </span>
               </div>
             </div>
@@ -488,44 +367,24 @@ function Profile() {
         </div>
 
         {/* ================= PASSWORD ================= */}
-
         <div className="profile-info-card">
           <div className="card-header">
             <h2>🔐 Đổi mật khẩu</h2>
-
             {!changingPassword && (
-              <button
-                className="edit-btn"
-                onClick={() =>
-                  setChangingPassword(true)
-                }
-              >
+              <button className="edit-btn" onClick={() => setChangingPassword(true)}>
                 ✏️ Đổi mật khẩu
               </button>
             )}
           </div>
 
           {changingPassword && (
-            <form
-              onSubmit={handleChangePassword}
-              className="profile-form"
-            >
+            <form onSubmit={handleChangePassword} className="profile-form">
               <div className="form-group">
-                <label>
-                  Mật khẩu hiện tại
-                </label>
+                <label>Mật khẩu hiện tại</label>
                 <input
                   type="password"
-                  value={
-                    passwordData.current_password
-                  }
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      current_password:
-                        e.target.value,
-                    })
-                  }
+                  value={passwordData.current_password}
+                  onChange={(e) => setPasswordData({ ...passwordData, current_password: e.target.value })}
                   required
                   placeholder="Nhập mật khẩu hiện tại"
                 />
@@ -535,56 +394,29 @@ function Profile() {
                 <label>Mật khẩu mới</label>
                 <input
                   type="password"
-                  value={
-                    passwordData.new_password
-                  }
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      new_password:
-                        e.target.value,
-                    })
-                  }
+                  value={passwordData.new_password}
+                  onChange={(e) => setPasswordData({ ...passwordData, new_password: e.target.value })}
                   required
-                  placeholder="Nhập mật khẩu mới"
+                  placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
                 />
               </div>
 
               <div className="form-group">
-                <label>
-                  Xác nhận mật khẩu mới
-                </label>
+                <label>Xác nhận mật khẩu mới</label>
                 <input
                   type="password"
-                  value={
-                    passwordData.confirm_password
-                  }
-                  onChange={(e) =>
-                    setPasswordData({
-                      ...passwordData,
-                      confirm_password:
-                        e.target.value,
-                    })
-                  }
+                  value={passwordData.confirm_password}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirm_password: e.target.value })}
                   required
                   placeholder="Nhập lại mật khẩu mới"
                 />
               </div>
 
               <div className="form-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() =>
-                    setChangingPassword(false)
-                  }
-                >
+                <button type="button" className="cancel-btn" onClick={() => setChangingPassword(false)}>
                   Hủy
                 </button>
-                <button
-                  type="submit"
-                  className="save-btn"
-                >
+                <button type="submit" className="save-btn">
                   Đổi mật khẩu
                 </button>
               </div>

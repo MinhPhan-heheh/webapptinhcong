@@ -9,6 +9,15 @@ function Attendance() {
   const [viewMode, setViewMode] = useState("week");
   const [selectedShift, setSelectedShift] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
+
+  const showToast = useCallback((message, type = "error") => {
+    const icon = type === "success" ? "✅ " : "❌ ";
+    setToast({ show: true, message: icon + message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: "", type: "" });
+    }, 3000);
+  }, []);
 
   const formatDate = (date) => {
     const year = date.getFullYear();
@@ -59,20 +68,29 @@ function Attendance() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        showToast("Vui lòng đăng nhập lại", "error");
+        return;
+      }
 
-      // ĐÃ SỬA: bỏ headers thủ công
       const response = await api.get("/api/workplaces/shifts/my");
       
       if (response.data.success) {
         setShifts(response.data.shifts || []);
+      } else {
+        showToast(response.data.message || "Không thể tải lịch làm việc", "error");
       }
     } catch (error) {
       console.error("Lỗi fetch shifts:", error);
+      if (error.response?.status === 401) {
+        showToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
+      } else {
+        showToast("Không thể tải lịch làm việc", "error");
+      }
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchShifts();
@@ -147,12 +165,12 @@ function Attendance() {
                       <div className="shift-time">
                         {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}
                       </div>
-                      <div className="shift-location">{shift.workplace_name || shift.location}</div>
-                      {shift.shift_type && <div className="shift-type">{shift.shift_type}</div>}
+                      <div className="shift-location">📍 {shift.workplace_name || shift.location}</div>
+                      {shift.holiday_type === 'holiday' && <div className="holiday-badge">🎉 Ngày lễ (x2)</div>}
                     </div>
                   ))
                 ) : (
-                  <div className="empty-box">📭</div>
+                  <div className="empty-box">📭 Không có ca</div>
                 )}
               </div>
             </div>
@@ -225,7 +243,7 @@ function Attendance() {
               </div>
               <div className="detail-workplace">🏢 {selectedShift.workplace_name || selectedShift.location}</div>
               <div className="detail-time">⏰ {selectedShift.start_time?.slice(0,5)} - {selectedShift.end_time?.slice(0,5)}</div>
-              {selectedShift.shift_type && <div className="detail-type">🏷️ {selectedShift.shift_type}</div>}
+              {selectedShift.holiday_type === 'holiday' && <div className="detail-holiday">🎉 Ngày lễ (x2 lương)</div>}
               <div className="detail-address">📍 {selectedShift.workplace_address || "Chưa có địa chỉ"}</div>
             </div>
           </div>
@@ -236,6 +254,12 @@ function Attendance() {
 
   return (
     <div className="attendance-page">
+      {toast.show && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
+
       <div className="top-bar">
         <div>
           <h1 className="title">📅 Lịch làm việc</h1>
@@ -263,7 +287,13 @@ function Attendance() {
         </div>
       </div>
 
-      {loading ? <div className="loading">Đang tải...</div> : viewMode === "week" ? renderWeekView() : renderMonthView()}
+      {loading ? (
+        <div className="loading">⏳ Đang tải lịch làm việc...</div>
+      ) : viewMode === "week" ? (
+        renderWeekView()
+      ) : (
+        renderMonthView()
+      )}
     </div>
   );
 }

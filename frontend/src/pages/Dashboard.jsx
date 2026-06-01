@@ -7,17 +7,28 @@ function Dashboard() {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
+
+  const showToast = (message, type = "error") => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+  };
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const response = await api.get("/api/dashboard");
+        const response = await api.get("/api/dashboard/");
         
         if (response.data.success) {
           setDashboardData(response.data.data);
         }
       } catch (error) {
         console.error("Lỗi fetch dashboard:", error);
+        if (error.response?.status === 401) {
+          showToast("❌ Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
+        } else {
+          showToast("❌ Không thể tải dữ liệu dashboard", "error");
+        }
       } finally {
         setLoading(false);
       }
@@ -47,24 +58,35 @@ function Dashboard() {
     navigate("/profile");
   };
 
-  // Hàm lấy URL ảnh đại diện - dùng trực tiếp từ API
+  // Hàm lấy URL ảnh đại diện
   const getAvatarUrl = () => {
     const avatar = dashboardData?.user?.avatar;
     if (avatar) {
-      // Nếu avatar đã là URL đầy đủ thì dùng luôn
-      // Nếu là path tương đối thì axios instance sẽ tự xử lý
+      if (avatar.startsWith("http")) {
+        return avatar;
+      }
+      if (avatar.startsWith("/uploads")) {
+        return `https://workshift-o5sm.onrender.com${avatar}`;
+      }
       return avatar;
     }
     return null;
   };
 
   if (loading) {
-    return <div className="dashboard-loading">Đang tải...</div>;
+    return <div className="dashboard-loading">⏳ Đang tải dữ liệu...</div>;
   }
 
   return (
     <div className="dashboard-page">
-      {/* Header với avatar - click vào avatar để vào profile */}
+      {/* Toast thông báo */}
+      {toast.show && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.message}
+        </div>
+      )}
+
+      {/* Header với avatar */}
       <div className="dashboard-header" onClick={goToProfile} style={{ cursor: "pointer" }}>
         <div className="user-info">
           <div className="user-avatar">
@@ -90,9 +112,8 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Thống kê - click vào từng card để chuyển trang */}
+      {/* Thống kê */}
       <div className="stats-grid">
-        {/* Card Ca làm - click vào shift */}
         <div className="stat-card" onClick={goToShifts} style={{ cursor: "pointer" }}>
           <div className="stat-icon">📅</div>
           <div className="stat-info">
@@ -101,7 +122,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Card Giờ làm - click vào attendance */}
         <div className="stat-card" onClick={goToAttendance} style={{ cursor: "pointer" }}>
           <div className="stat-icon">⏰</div>
           <div className="stat-info">
@@ -110,7 +130,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Card Lương - click vào salary */}
         <div className="stat-card" onClick={goToSalary} style={{ cursor: "pointer" }}>
           <div className="stat-icon">💰</div>
           <div className="stat-info">
@@ -121,7 +140,6 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Card Chỗ làm - click vào workplace-register */}
         <div className="stat-card" onClick={goToWorkplaces} style={{ cursor: "pointer" }}>
           <div className="stat-icon">🏢</div>
           <div className="stat-info">
@@ -131,7 +149,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Ca làm sắp tới - click vào từng ca để vào shift */}
+      {/* Ca làm sắp tới */}
       <div className="upcoming-section">
         <div className="section-header">
           <h3>📋 Ca làm sắp tới</h3>
@@ -154,7 +172,7 @@ function Dashboard() {
                 </div>
                 <div className="upcoming-place">{shift.workplace_name}</div>
                 {shift.holiday_type === 'holiday' && (
-                  <div className="holiday-badge">🎉 Ngày lễ</div>
+                  <div className="holiday-badge">🎉 Ngày lễ (x2)</div>
                 )}
               </div>
             ))}

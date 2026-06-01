@@ -18,24 +18,24 @@ function WorkplaceRegister() {
     overtime_rate: "1.5",
   });
 
+  // SỬA: tăng thời gian lên 3000ms và thêm icon vào message
   const showToast = useCallback((message, type = "success") => {
-    setToast({ show: true, message, type });
+    const icon = type === "success" ? "✅ " : "❌ ";
+    setToast({ show: true, message: icon + message, type });
     setTimeout(() => {
       setToast({ show: false, message: "", type: "" });
-    }, 2000);
+    }, 3000);
   }, []);
 
   const fetchWorkplaces = useCallback(async () => {
     try {
       setLoading(true);
-      // ĐÃ SỬA: work-places -> workplaces
       const response = await api.get("/api/workplaces/my");
 
       if (response.data.success) {
         setWorkplaces(response.data.workplaces || []);
       }
     } catch (error) {
-      console.error("Lỗi fetch workplaces:", error);
       showToast("Không thể tải danh sách chỗ làm", "error");
     } finally {
       setLoading(false);
@@ -50,7 +50,7 @@ function WorkplaceRegister() {
     e.preventDefault();
 
     if (!formData.name || !formData.address || !formData.hourly_rate) {
-      showToast("Vui lòng nhập đầy đủ thông tin", "error");
+      showToast("Vui lòng nhập đầy đủ thông tin (tên, địa chỉ, lương theo giờ)", "error");
       return;
     }
 
@@ -73,13 +73,11 @@ function WorkplaceRegister() {
       };
 
       if (editingWorkplace) {
-        // ĐÃ SỬA: work-places -> workplaces
         response = await api.put(`/api/workplaces/${editingWorkplace.id}`, submitData);
-        showToast("Cập nhật thành công!", "success");
+        showToast("Cập nhật chỗ làm thành công!", "success");
       } else {
-        // ĐÃ SỬA: work-places -> workplaces
         response = await api.post("/api/workplaces/register", submitData);
-        showToast("Đăng ký thành công!", "success");
+        showToast("Đăng ký chỗ làm mới thành công!", "success");
       }
 
       if (response.data.success) {
@@ -87,7 +85,7 @@ function WorkplaceRegister() {
         fetchWorkplaces();
       }
     } catch (error) {
-      showToast(error.response?.data?.message || "Có lỗi xảy ra", "error");
+      showToast(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại", "error");
     }
   };
 
@@ -123,7 +121,6 @@ function WorkplaceRegister() {
     <div className="workplace-page">
       {toast.show && (
         <div className={`toast-notification ${toast.type}`}>
-          {toast.type === "success" ? "✅ " : "❌ "}
           {toast.message}
         </div>
       )}
@@ -131,20 +128,20 @@ function WorkplaceRegister() {
       <div className="workplace-header">
         <h1 className="title">🏢 Chỗ làm</h1>
         <button className="btn-add" onClick={() => setShowForm(true)}>
-          + Thêm
+          + Thêm chỗ làm
         </button>
       </div>
 
       {showForm && (
         <div className="modal-overlay">
           <form className="modal-box" onSubmit={handleSubmit}>
-            <h2>{editingWorkplace ? "✏️ Sửa chỗ làm" : "➕ Thêm chỗ làm"}</h2>
+            <h2>{editingWorkplace ? "✏️ Sửa chỗ làm" : "➕ Thêm chỗ làm mới"}</h2>
 
             <div className="form-group">
-              <label>Tên chỗ làm</label>
+              <label>Tên chỗ làm <span style={{ color: "red" }}>*</span></label>
               <input
                 type="text"
-                placeholder="VD: Công ty ABC"
+                placeholder="VD: Công ty ABC, Quán cà phê XYZ"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -152,10 +149,10 @@ function WorkplaceRegister() {
             </div>
 
             <div className="form-group">
-              <label>Địa chỉ</label>
+              <label>Địa chỉ <span style={{ color: "red" }}>*</span></label>
               <input
                 type="text"
-                placeholder="VD: Biên Hòa"
+                placeholder="VD: Biên Hòa, Đồng Nai"
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 required
@@ -164,7 +161,7 @@ function WorkplaceRegister() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Lương theo giờ</label>
+                <label>Lương theo giờ (VNĐ) <span style={{ color: "red" }}>*</span></label>
                 <input
                   type="number"
                   placeholder="25000"
@@ -175,7 +172,7 @@ function WorkplaceRegister() {
               </div>
 
               <div className="form-group">
-                <label>Lương cơ bản</label>
+                <label>Lương cơ bản (VNĐ)</label>
                 <input
                   type="number"
                   placeholder="Để trống"
@@ -192,14 +189,14 @@ function WorkplaceRegister() {
                   value={formData.has_break}
                   onChange={(e) => setFormData({ ...formData, has_break: e.target.value === "true" })}
                 >
-                  <option value="false">Không</option>
-                  <option value="true">Có</option>
+                  <option value="false">❌ Không</option>
+                  <option value="true">✅ Có</option>
                 </select>
               </div>
 
               {formData.has_break && (
                 <div className="form-group">
-                  <label>Phút nghỉ</label>
+                  <label>Thời gian nghỉ (phút)</label>
                   <input
                     type="number"
                     value={formData.break_minutes}
@@ -209,7 +206,7 @@ function WorkplaceRegister() {
               )}
 
               <div className="form-group">
-                <label>Tăng ca (x)</label>
+                <label>Hệ số tăng ca</label>
                 <input
                   type="number"
                   step="0.1"
@@ -220,8 +217,8 @@ function WorkplaceRegister() {
             </div>
 
             <div className="modal-buttons">
-              <button type="button" className="cancel-btn" onClick={resetForm}>Hủy</button>
-              <button type="submit" className="save-btn">{editingWorkplace ? "Cập nhật" : "Thêm"}</button>
+              <button type="button" className="cancel-btn" onClick={resetForm}>Hủy bỏ</button>
+              <button type="submit" className="save-btn">{editingWorkplace ? "Cập nhật" : "Thêm mới"}</button>
             </div>
           </form>
         </div>
@@ -229,18 +226,18 @@ function WorkplaceRegister() {
 
       <div className="workplace-grid">
         {loading ? (
-          <div className="loading">Đang tải...</div>
+          <div className="loading">⏳ Đang tải danh sách chỗ làm...</div>
         ) : workplaces.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🏢</div>
-            <p>Chưa có chỗ làm</p>
-            <button className="btn-empty" onClick={() => setShowForm(true)}>+ Thêm ngay</button>
+            <p>Chưa có chỗ làm nào</p>
+            <button className="btn-empty" onClick={() => setShowForm(true)}>+ Thêm chỗ làm ngay</button>
           </div>
         ) : (
           workplaces.map((workplace) => (
             <div key={workplace.id} className="workplace-card">
               <div className="workplace-name">{workplace.name}</div>
-              <div className="workplace-address">{workplace.address}</div>
+              <div className="workplace-address">📍 {workplace.address}</div>
               <div className="workplace-stats">
                 <div className="stat-item">
                   <span className="stat-label">💰 Lương</span>
@@ -253,7 +250,7 @@ function WorkplaceRegister() {
                 {workplace.has_break && (
                   <div className="stat-item">
                     <span className="stat-label">🍜 Nghỉ</span>
-                    <span className="stat-value">{workplace.break_minutes}'</span>
+                    <span className="stat-value">{workplace.break_minutes} phút</span>
                   </div>
                 )}
               </div>
