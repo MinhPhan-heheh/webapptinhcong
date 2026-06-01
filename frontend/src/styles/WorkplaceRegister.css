@@ -310,3 +310,193 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+.refreshing-overlay {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading Skeleton */
+.loading-skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  animation: fadeIn 0.3s ease;
+}
+
+.skeleton-card {
+  background: white;
+  border-radius: 16px;
+  padding: 16px;
+  height: 200px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+  border-radius: 16px;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Required field indicator */
+.required {
+  color: #dc3545;
+  margin-left: 2px;
+}
+
+/* Modal animation */
+.modal-box {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus states */
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+.btn-add:hover,
+.btn-empty:hover,
+.save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn-add:active,
+.btn-empty:active,
+.save-btn:active,
+.cancel-btn:active {
+  transform: scale(0.98);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #0056b3;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .workplace-page {
+    background: #1a1a2e;
+  }
+  
+  .workplace-header,
+  .workplace-card,
+  .modal-box,
+  .skeleton-card {
+    background: #16213e;
+  }
+  
+  .title,
+  .workplace-name,
+  .stat-value,
+  .modal-box h2,
+  .form-group label {
+    color: #eee;
+  }
+  
+  .workplace-address,
+  .stat-label {
+    color: #aaa;
+  }
+  
+  .cancel-btn {
+    background: #2a2a4a;
+    color: #ddd;
+  }
+  
+  .form-group input,
+  .form-group select {
+    background: #1a1a3e;
+    border-color: #2a2a4a;
+    color: #ddd;
+  }
+}
+
+/* Print styles */
+@media print {
+  .btn-add,
+  .btn-edit,
+  .modal-overlay,
+  .toast-notification,
+  .refreshing-overlay {
+    display: none;
+  }
+  
+  .workplace-page {
+    background: white;
+    padding: 0;
+  }
+  
+  .workplace-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+}
+
+/* Touch target improvements for mobile */
+@media (max-width: 768px) {
+  .btn-add,
+  .btn-edit,
+  .btn-empty,
+  .cancel-btn,
+  .save-btn {
+    min-height: 44px;
+  }
+  
+  .workplace-card {
+    cursor: pointer;
+  }
+}

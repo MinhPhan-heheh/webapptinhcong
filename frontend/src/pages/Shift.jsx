@@ -8,8 +8,10 @@ const MONTH_NAMES = [
   "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
   "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
 ];
+const TOAST_DURATION = 3000;
+const REFRESH_INTERVAL = 30000; // 30 seconds
 
-// Hàm xử lý ngày theo múi giờ Việt Nam
+// Helper functions
 const formatVNDate = (dateStr) => {
   if (!dateStr) return "";
   if (typeof dateStr === 'string' && dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -33,11 +35,12 @@ const getCurrentDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// Memoized Components
 const ShiftCard = memo(({ shift, onEdit, onDelete }) => (
   <div className={`shift-card ${shift.holiday_type === 'holiday' ? 'holiday' : ''}`}>
     <div className="shift-actions">
-      <button className="edit-btn" onClick={() => onEdit(shift)}>✏️</button>
-      <button className="delete-btn" onClick={() => onDelete(shift.id)}>✕</button>
+      <button className="edit-btn" onClick={() => onEdit(shift)} aria-label="Sửa">✏️</button>
+      <button className="delete-btn" onClick={() => onDelete(shift.id)} aria-label="Xóa">✕</button>
     </div>
     <div className="shift-time">⏰ {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}</div>
     <div className="shift-location">📍 {shift.workplace_name}</div>
@@ -45,31 +48,23 @@ const ShiftCard = memo(({ shift, onEdit, onDelete }) => (
   </div>
 ));
 
-const DayCard = memo(({ day, weekNames, todayStr, shifts, onAddShift, onEditShift, onDeleteShift }) => {
-  const year = day.getFullYear();
-  const month = String(day.getMonth() + 1).padStart(2, "0");
-  const date = String(day.getDate()).padStart(2, "0");
-  const dateStr = `${year}-${month}-${date}`;
+const DayCard = memo(({ day, todayStr, shifts, onAddShift, onEditShift, onDeleteShift }) => {
+  const dateStr = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}`;
   const isToday = dateStr === todayStr;
   
-  const dayShifts = shifts.filter(shift => {
-    let shiftDate = shift.shift_date;
-    if (shiftDate && typeof shiftDate === 'string') {
-      shiftDate = shiftDate.split('T')[0];
-    }
-    return shiftDate === dateStr;
-  });
-
-  const displayDay = day.getDate();
-  const displayMonth = day.getMonth() + 1;
-  const displayYear = day.getFullYear();
+  const dayShifts = useMemo(() => 
+    shifts.filter(shift => {
+      const shiftDate = shift.shift_date?.split('T')[0];
+      return shiftDate === dateStr;
+    }), [shifts, dateStr]
+  );
 
   return (
     <div className={`day-card ${isToday ? "today-card" : ""}`}>
       <div className="card-header">
-        <span className="day-name">{weekNames[day.getDay()]}</span>
-        <h2 className="day-number">{displayDay}</h2>
-        <span className="month-name">{displayMonth}/{displayYear}</span>
+        <span className="day-name">{WEEK_NAMES[day.getDay()]}</span>
+        <h2 className="day-number">{day.getDate()}</h2>
+        <span className="month-name">{day.getMonth() + 1}/{day.getFullYear()}</span>
         {dayShifts.length > 0 && <span className="shift-count">{dayShifts.length}</span>}
       </div>
       <div className="shifts-list">
@@ -86,11 +81,24 @@ const DayCard = memo(({ day, weekNames, todayStr, shifts, onAddShift, onEditShif
   );
 });
 
+const Toast = memo(({ show, message, type }) => {
+  if (!show) return null;
+  return <div className={`toast-notification ${type}`}>{message}</div>;
+});
+
+const LoadingSpinner = memo(() => (
+  <div className="loading-overlay">
+    <div className="spinner"></div>
+    <div className="loading-text">Đang tải...</div>
+  </div>
+));
+
 function Shift() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [shifts, setShifts] = useState([]);
   const [workplaces, setWorkplaces] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [editingShift, setEditingShift] = useState(null);
@@ -105,10 +113,11 @@ function Shift() {
 
   const showToast = useCallback((message, type = "success") => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+    const timer = setTimeout(() => setToast({ show: false, message: "", type: "" }), TOAST_DURATION);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Navigation
+  // Navigation handlers
   const goToPreviousWeek = useCallback(() => {
     setCurrentDate(prev => new Date(prev.getTime() - 7 * 24 * 60 * 60 * 1000));
   }, []);
@@ -134,21 +143,36 @@ function Shift() {
     setCurrentDate(new Date(parseInt(year), parseInt(month) - 1, 1));
   }, []);
 
-  // Fetch data
+  // Fetch data with abort controller
   const fetchWorkplaces = useCallback(async () => {
     try {
       const response = await api.get("/api/workplaces/my");
       setWorkplaces(response.data.workplaces || []);
     } catch (error) {
-      showToast("❌ Không thể tải danh sách chỗ làm", "error");
+      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+        console.error("Lỗi fetch workplaces:", error);
+        if (error.response?.status !== 401) {
+          showToast("Không thể tải danh sách chỗ làm", "error");
+        }
+      }
     }
   }, [showToast]);
 
-  const fetchShifts = useCallback(async () => {
-    setLoading(true);
+  const fetchShifts = useCallback(async (isRefresh = false) => {
+    const controller = new AbortController();
+    
     try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
       const params = selectedWorkplace ? { workplace_id: selectedWorkplace } : {};
-      const response = await api.get("/api/workplaces/shifts/my", { params });
+      const response = await api.get("/api/workplaces/shifts/my", { 
+        params,
+        signal: controller.signal
+      });
       
       if (response.data.success) {
         const processedShifts = (response.data.shifts || []).map(shift => ({
@@ -160,17 +184,41 @@ function Shift() {
         setShifts([]);
       }
     } catch (error) {
-      setShifts([]);
-      showToast("❌ Không thể tải danh sách ca làm", "error");
+      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+        console.error("Lỗi fetch shifts:", error);
+        if (error.response?.status !== 401) {
+          setShifts([]);
+          showToast("Không thể tải danh sách ca làm", "error");
+        }
+      }
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+    
+    return () => controller.abort();
   }, [selectedWorkplace, showToast]);
 
+  // Initial load
   useEffect(() => {
-    fetchShifts();
-    fetchWorkplaces();
+    const loadData = async () => {
+      await Promise.all([fetchShifts(), fetchWorkplaces()]);
+    };
+    loadData();
   }, [fetchShifts, fetchWorkplaces]);
+
+  // Auto refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && !refreshing) {
+        fetchShifts(true);
+      }
+    }, REFRESH_INTERVAL);
+    return () => clearInterval(interval);
+  }, [fetchShifts, loading, refreshing]);
 
   // Form handlers
   const resetForm = useCallback(() => {
@@ -213,23 +261,23 @@ function Shift() {
     e.preventDefault();
     
     if (!selectedDate) {
-      showToast("❌ Vui lòng chọn ngày bằng cách click vào nút + Thêm trên lịch", "error");
+      showToast("Vui lòng chọn ngày bằng cách click vào nút + Thêm trên lịch", "error");
       return;
     }
     if (!formData.workplace_id) {
-      showToast("❌ Vui lòng chọn chỗ làm", "error");
+      showToast("Vui lòng chọn chỗ làm", "error");
       return;
     }
     if (!formData.start_time) {
-      showToast("❌ Vui lòng chọn giờ bắt đầu", "error");
+      showToast("Vui lòng chọn giờ bắt đầu", "error");
       return;
     }
     if (!formData.end_time) {
-      showToast("❌ Vui lòng chọn giờ kết thúc", "error");
+      showToast("Vui lòng chọn giờ kết thúc", "error");
       return;
     }
     if (formData.start_time >= formData.end_time) {
-      showToast("❌ Giờ kết thúc phải lớn hơn giờ bắt đầu", "error");
+      showToast("Giờ kết thúc phải lớn hơn giờ bắt đầu", "error");
       return;
     }
 
@@ -246,21 +294,21 @@ function Shift() {
       
       if (editingShift) {
         response = await api.put(`/api/workplaces/shifts/${editingShift.id}`, submitData);
-        showToast("✅ Cập nhật ca thành công!", "success");
+        showToast("Cập nhật ca thành công!", "success");
       } else {
         response = await api.post("/api/workplaces/shifts/create", submitData);
-        showToast("✅ Đăng ký ca làm thành công!", "success");
+        showToast("Đăng ký ca làm thành công!", "success");
       }
 
       if (response.data.success) {
         setShowForm(false);
         resetForm();
-        fetchShifts();
+        fetchShifts(true);
       } else {
-        showToast(`❌ ${response.data.message || "Có lỗi xảy ra"}`, "error");
+        showToast(response.data.message || "Có lỗi xảy ra", "error");
       }
     } catch (error) {
-      showToast(`❌ ${error.response?.data?.message || "Lỗi tạo/cập nhật ca"}`, "error");
+      showToast(error.response?.data?.message || "Lỗi tạo/cập nhật ca", "error");
     }
   }, [selectedDate, formData, editingShift, resetForm, fetchShifts, showToast]);
 
@@ -270,13 +318,13 @@ function Shift() {
     try {
       const response = await api.delete(`/api/workplaces/shifts/${id}`);
       if (response.data.success) {
-        showToast("✅ Xóa ca thành công!", "success");
-        fetchShifts();
+        showToast("Xóa ca thành công!", "success");
+        fetchShifts(true);
       } else {
-        showToast(`❌ ${response.data.message}`, "error");
+        showToast(response.data.message, "error");
       }
     } catch (error) {
-      showToast("❌ Lỗi xóa ca", "error");
+      showToast("Lỗi xóa ca", "error");
     }
   }, [fetchShifts, showToast]);
 
@@ -298,19 +346,35 @@ function Shift() {
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  const formatDisplayDate = (dateStr) => {
+  const formatDisplayDate = useCallback((dateStr) => {
     if (!dateStr) return "Chưa chọn ngày";
     const date = new Date(dateStr);
     return date.toLocaleDateString('vi-VN');
-  };
+  }, []);
+
+  // Memoized shift map for better performance
+  const shiftsByDateMap = useMemo(() => {
+    const map = new Map();
+    shifts.forEach(shift => {
+      const dateKey = shift.shift_date?.split('T')[0];
+      if (dateKey) {
+        if (!map.has(dateKey)) map.set(dateKey, []);
+        map.get(dateKey).push(shift);
+      }
+    });
+    return map;
+  }, [shifts]);
+
+  // Optimized get shifts by date using map
+  const getShiftsByDate = useCallback((dateStr) => {
+    return shiftsByDateMap.get(dateStr) || [];
+  }, [shiftsByDateMap]);
 
   return (
     <div className="shift-page">
-      {toast.show && (
-        <div className={`toast-notification ${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
+      
+      {refreshing && <div className="refreshing-overlay">🔄 Đang cập nhật...</div>}
 
       <div className="top-bar">
         <div>
@@ -334,7 +398,7 @@ function Shift() {
 
       <div className="controls-bar">
         <div className="month-controls">
-          <button onClick={goToPreviousMonth} className="control-btn">◀</button>
+          <button onClick={goToPreviousMonth} className="control-btn" aria-label="Tháng trước">◀</button>
           <select 
             value={`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`} 
             onChange={handleMonthChange} 
@@ -346,14 +410,14 @@ function Shift() {
               </option>
             ))}
           </select>
-          <button onClick={goToNextMonth} className="control-btn">▶</button>
+          <button onClick={goToNextMonth} className="control-btn" aria-label="Tháng sau">▶</button>
           <button onClick={goToCurrentWeek} className="control-btn today-btn">Hôm nay</button>
         </div>
 
         <div className="week-controls">
-          <button onClick={goToPreviousWeek} className="control-btn">◀</button>
+          <button onClick={goToPreviousWeek} className="control-btn" aria-label="Tuần trước">◀</button>
           <span className="week-info">Tuần</span>
-          <button onClick={goToNextWeek} className="control-btn">▶</button>
+          <button onClick={goToNextWeek} className="control-btn" aria-label="Tuần sau">▶</button>
         </div>
       </div>
 
@@ -362,7 +426,6 @@ function Shift() {
           <DayCard
             key={index}
             day={day}
-            weekNames={WEEK_NAMES}
             todayStr={todayStr}
             shifts={shifts}
             onAddShift={openAddForm}
@@ -372,14 +435,14 @@ function Shift() {
         ))}
       </div>
 
-      <button className="fab" onClick={() => openAddForm(getCurrentDate())}>+</button>
+      <button className="fab" onClick={() => openAddForm(getCurrentDate())} aria-label="Thêm ca">+</button>
 
       {showForm && (
         <div className="modal-overlay" onClick={() => { setShowForm(false); resetForm(); }}>
           <form className="modal-box" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmitShift}>
             <h2>{editingShift ? "✏️ Cập nhật ca" : "➕ Đăng ký ca mới"}</h2>
 
-            <div className="form-group" style={{ 
+            <div className="form-group date-display" style={{ 
               backgroundColor: selectedDate ? '#e8f5e9' : '#ffebee', 
               padding: '12px', 
               borderRadius: '8px', 
@@ -452,7 +515,7 @@ function Shift() {
         </div>
       )}
 
-      {loading && <div className="loading-overlay"><div className="spinner"></div></div>}
+      {loading && <LoadingSpinner />}
     </div>
   );
 }

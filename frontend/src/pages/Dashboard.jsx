@@ -1,29 +1,77 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "../styles/Dashboard.css";
+
+// Constants
+const REFRESH_INTERVAL = 30000; // 30 seconds
+
+// Stat Card Component - memoized
+const StatCard = memo(({ icon, label, value, onClick }) => (
+  <div className="stat-card" onClick={onClick} style={{ cursor: "pointer" }}>
+    <div className="stat-icon">{icon}</div>
+    <div className="stat-info">
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  </div>
+));
+
+// Upcoming Shift Item Component - memoized
+const UpcomingShiftItem = memo(({ shift, onClick }) => (
+  <div className="upcoming-item" onClick={onClick} style={{ cursor: "pointer" }}>
+    <div className="upcoming-date">
+      {new Date(shift.shift_date).toLocaleDateString("vi-VN")}
+    </div>
+    <div className="upcoming-time">
+      {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}
+    </div>
+    <div className="upcoming-place">{shift.workplace_name}</div>
+    {shift.holiday_type === 'holiday' && (
+      <div className="holiday-badge">🎉 Ngày lễ (x2)</div>
+    )}
+  </div>
+));
+
+// Month Stat Card Component - memoized
+const MonthStatCard = memo(({ label, value, onClick, isSalary = false }) => (
+  <div className="month-stat-card" onClick={onClick} style={{ cursor: "pointer" }}>
+    <div className={`month-stat-value ${isSalary ? "salary" : ""}`}>
+      {value}
+    </div>
+    <div className="month-stat-label">{label}</div>
+  </div>
+));
+
+// Toast Component
+const Toast = memo(({ show, message, type }) => {
+  if (!show) return null;
+  return (
+    <div className={`toast-notification ${type}`}>
+      {message}
+    </div>
+  );
+});
 
 function Dashboard() {
   const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
-  const [userAvatar, setUserAvatar] = useState(null);
 
-  const showToast = (message, type = "error") => {
+  const showToast = useCallback((message, type = "error") => {
     setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
-  };
+    const timer = setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  // Hàm lấy avatar từ localStorage hoặc API
-  const getAvatarFromStorage = useCallback(() => {
+  // Get user from localStorage - memoized
+  const getUserFromStorage = useCallback(() => {
     try {
       const userStr = localStorage.getItem("user");
       if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.avatar) {
-          return user.avatar;
-        }
+        return JSON.parse(userStr);
       }
     } catch (e) {
       console.error("Lỗi đọc user từ localStorage:", e);
@@ -31,107 +79,153 @@ function Dashboard() {
     return null;
   }, []);
 
-  // Hàm lấy URL ảnh đại diện
+  // Get avatar URL - memoized
   const getAvatarUrl = useCallback(() => {
-    // Ưu tiên avatar từ dashboardData (mới nhất)
-    let avatar = dashboardData?.user?.avatar;
+    const avatar = dashboardData?.user?.avatar || getUserFromStorage()?.avatar;
+    if (!avatar) return null;
     
-    // Nếu không có, lấy từ localStorage
-    if (!avatar) {
-      avatar = getAvatarFromStorage();
+    if (avatar.startsWith("http")) return avatar;
+    if (avatar.startsWith("/uploads")) {
+      return `https://workshift-o5sm.onrender.com${avatar}`;
     }
-    
-    if (avatar) {
-      if (avatar.startsWith("http")) {
-        return avatar;
-      }
-      if (avatar.startsWith("/uploads")) {
-        return `https://workshift-o5sm.onrender.com${avatar}`;
-      }
-      return avatar;
-    }
-    return null;
-  }, [dashboardData?.user?.avatar, getAvatarFromStorage]);
+    return avatar;
+  }, [dashboardData?.user?.avatar, getUserFromStorage]);
 
-  // Lắng nghe sự kiện thay đổi avatar từ Profile
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === "user") {
-        const newAvatar = getAvatarFromStorage();
-        setUserAvatar(newAvatar);
-        // Cập nhật lại dashboard để lấy avatar mới
-        fetchDashboard();
-      }
+  // Get user name - memoized
+  const getUserName = useCallback(() => {
+    return dashboardData?.user?.full_name || getUserFromStorage()?.full_name || "User";
+  }, [dashboardData?.user?.full_name, getUserFromStorage]);
+
+  // Get user email - memoized
+  const getUserEmail = useCallback(() => {
+    return dashboardData?.user?.email || getUserFromStorage()?.email || "";
+  }, [dashboardData?.user?.email, getUserFromStorage]);
+
+  // Update user in localStorage with fresh data
+  const updateUserInStorage = useCallback((userData) => {
+    if (!userData) return;
+    
+    const currentUser = getUserFromStorage();
+    const updatedUser = {
+      ...currentUser,
+      ...userData,
+      avatar: userData.avatar || currentUser?.avatar
     };
+    localStorage.setItem("user", JSON.stringify(updatedUser));
+  }, [getUserFromStorage]);
 
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
-  }, [getAvatarFromStorage]);
-
-  const fetchDashboard = async () => {
+  // Fetch dashboard data
+  const fetchDashboard = useCallback(async (isRefresh = false) => {
+    const controller = new AbortController();
+    
     try {
-      setLoading(true);
-      const response = await api.get("/api/dashboard/");
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const response = await api.get("/api/dashboard/", {
+        signal: controller.signal
+      });
       
       if (response.data.success) {
         setDashboardData(response.data.data);
         
-        // Cập nhật user trong localStorage với avatar mới từ API
+        // Update user in localStorage with fresh avatar
         if (response.data.data?.user) {
-          const currentUserStr = localStorage.getItem("user");
-          if (currentUserStr) {
-            const currentUser = JSON.parse(currentUserStr);
-            const updatedUser = {
-              ...currentUser,
-              avatar: response.data.data.user.avatar || currentUser.avatar
-            };
-            localStorage.setItem("user", JSON.stringify(updatedUser));
-          }
+          updateUserInStorage(response.data.data.user);
         }
       }
     } catch (error) {
-      console.error("Lỗi fetch dashboard:", error);
-      if (error.response?.status === 401) {
-        showToast("❌ Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
-      } else {
-        showToast("❌ Không thể tải dữ liệu dashboard", "error");
+      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+        console.error("Lỗi fetch dashboard:", error);
+        if (error.response?.status === 401) {
+          showToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
+          // Clear invalid session
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          setTimeout(() => navigate("/"), 2000);
+        } else {
+          showToast("Không thể tải dữ liệu dashboard", "error");
+        }
       }
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
-  };
+    
+    return () => controller.abort();
+  }, [navigate, showToast, updateUserInStorage]);
 
+  // Initial load
   useEffect(() => {
     fetchDashboard();
-    
-    // Set interval để cập nhật dashboard mỗi 30 giây (tùy chọn)
+  }, [fetchDashboard]);
+
+  // Auto refresh interval
+  useEffect(() => {
     const interval = setInterval(() => {
-      fetchDashboard();
-    }, 30000);
+      if (!loading && !refreshing) {
+        fetchDashboard(true);
+      }
+    }, REFRESH_INTERVAL);
     
     return () => clearInterval(interval);
+  }, [fetchDashboard, loading, refreshing]);
+
+  // Handle avatar error
+  const handleAvatarError = useCallback((e) => {
+    e.target.style.display = 'none';
+    const nextSibling = e.target.nextSibling;
+    if (nextSibling) {
+      nextSibling.style.display = 'flex';
+    }
+    
+    // Clear invalid avatar from localStorage
+    const user = getUserFromStorage();
+    if (user?.avatar) {
+      user.avatar = null;
+      localStorage.setItem("user", JSON.stringify(user));
+    }
+  }, [getUserFromStorage]);
+
+  // Navigation handlers - memoized
+  const navigationHandlers = useMemo(() => ({
+    shifts: () => navigate("/shift"),
+    attendance: () => navigate("/attendance"),
+    salary: () => navigate("/salary"),
+    workplaces: () => navigate("/workplace-register"),
+    profile: () => navigate("/profile")
+  }), [navigate]);
+
+  // Memoized values
+  const avatarUrl = useMemo(() => getAvatarUrl(), [getAvatarUrl]);
+  const userName = useMemo(() => getUserName(), [getUserName]);
+  const userEmail = useMemo(() => getUserEmail(), [getUserEmail]);
+  const userInitial = useMemo(() => userName.charAt(0).toUpperCase(), [userName]);
+  
+  const stats = useMemo(() => ({
+    totalShiftsThisWeek: dashboardData?.stats?.totalShiftsThisWeek || 0,
+    totalHoursThisWeek: dashboardData?.stats?.totalHoursThisWeek || 0,
+    estimatedSalary: (dashboardData?.stats?.estimatedSalary || 0).toLocaleString(),
+    totalWorkplaces: dashboardData?.stats?.totalWorkplaces || 0,
+    totalShiftsThisMonth: dashboardData?.stats?.totalShiftsThisMonth || 0,
+    totalHoursThisMonth: dashboardData?.stats?.totalHoursThisMonth || 0
+  }), [dashboardData]);
+
+  const upcomingShifts = useMemo(() => 
+    dashboardData?.stats?.upcomingShifts || [], 
+    [dashboardData?.stats?.upcomingShifts]
+  );
+
+  const currentDate = useMemo(() => {
+    const now = new Date();
+    return `${now.getMonth() + 1}/${now.getFullYear()}`;
   }, []);
-
-  // Hàm điều hướng
-  const goToShifts = () => {
-    navigate("/shift");
-  };
-
-  const goToAttendance = () => {
-    navigate("/attendance");
-  };
-
-  const goToSalary = () => {
-    navigate("/salary");
-  };
-
-  const goToWorkplaces = () => {
-    navigate("/workplace-register");
-  };
-
-  const goToProfile = () => {
-    navigate("/profile");
-  };
 
   if (loading) {
     return <div className="dashboard-loading">⏳ Đang tải dữ liệu...</div>;
@@ -139,177 +233,106 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      {/* Toast thông báo */}
-      {toast.show && (
-        <div className={`toast-notification ${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
 
-      {/* Header với avatar */}
-      <div className="dashboard-header" onClick={goToProfile} style={{ cursor: "pointer" }}>
+      {/* Header with avatar */}
+      <div className="dashboard-header" onClick={navigationHandlers.profile} style={{ cursor: "pointer" }}>
         <div className="user-info">
           <div className="user-avatar">
-            {getAvatarUrl() ? (
+            {avatarUrl ? (
               <img 
-                src={getAvatarUrl()} 
+                src={avatarUrl} 
                 alt="Avatar" 
                 className="avatar-img"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                  // Xóa avatar khỏi localStorage nếu ảnh lỗi
-                  const userStr = localStorage.getItem("user");
-                  if (userStr) {
-                    const user = JSON.parse(userStr);
-                    if (user.avatar) {
-                      user.avatar = null;
-                      localStorage.setItem("user", JSON.stringify(user));
-                    }
-                  }
-                }}
+                onError={handleAvatarError}
               />
             ) : null}
-            <div className="avatar-placeholder" style={{ display: getAvatarUrl() ? 'none' : 'flex' }}>
-              {dashboardData?.user?.full_name?.charAt(0) || 
-               (() => {
-                 const userStr = localStorage.getItem("user");
-                 if (userStr) {
-                   try {
-                     const user = JSON.parse(userStr);
-                     return user.full_name?.charAt(0) || "U";
-                   } catch (e) {
-                     return "U";
-                   }
-                 }
-                 return "U";
-               })()}
+            <div className="avatar-placeholder" style={{ display: avatarUrl ? 'none' : 'flex' }}>
+              {userInitial}
             </div>
           </div>
           <div className="user-details">
-            <h2>Xin chào, {dashboardData?.user?.full_name || 
-              (() => {
-                const userStr = localStorage.getItem("user");
-                if (userStr) {
-                  try {
-                    const user = JSON.parse(userStr);
-                    return user.full_name || "User";
-                  } catch (e) {
-                    return "User";
-                  }
-                }
-                return "User";
-              })()}!</h2>
-            <p>{dashboardData?.user?.email || 
-              (() => {
-                const userStr = localStorage.getItem("user");
-                if (userStr) {
-                  try {
-                    const user = JSON.parse(userStr);
-                    return user.email || "";
-                  } catch (e) {
-                    return "";
-                  }
-                }
-                return "";
-              })()}</p>
+            <h2>Xin chào, {userName}!</h2>
+            <p>{userEmail}</p>
           </div>
         </div>
+        {refreshing && <div className="refreshing-indicator">🔄</div>}
       </div>
 
-      {/* Thống kê */}
+      {/* Stats Grid */}
       <div className="stats-grid">
-        <div className="stat-card" onClick={goToShifts} style={{ cursor: "pointer" }}>
-          <div className="stat-icon">📅</div>
-          <div className="stat-info">
-            <div className="stat-value">{dashboardData?.stats?.totalShiftsThisWeek || 0}</div>
-            <div className="stat-label">Ca làm tuần này</div>
-          </div>
-        </div>
-
-        <div className="stat-card" onClick={goToAttendance} style={{ cursor: "pointer" }}>
-          <div className="stat-icon">⏰</div>
-          <div className="stat-info">
-            <div className="stat-value">{dashboardData?.stats?.totalHoursThisWeek || 0}h</div>
-            <div className="stat-label">Giờ làm tuần này</div>
-          </div>
-        </div>
-
-        <div className="stat-card" onClick={goToSalary} style={{ cursor: "pointer" }}>
-          <div className="stat-icon">💰</div>
-          <div className="stat-info">
-            <div className="stat-value">
-              {(dashboardData?.stats?.estimatedSalary || 0).toLocaleString()}đ
-            </div>
-            <div className="stat-label">Lương tháng này</div>
-          </div>
-        </div>
-
-        <div className="stat-card" onClick={goToWorkplaces} style={{ cursor: "pointer" }}>
-          <div className="stat-icon">🏢</div>
-          <div className="stat-info">
-            <div className="stat-value">{dashboardData?.stats?.totalWorkplaces || 0}</div>
-            <div className="stat-label">Chỗ làm</div>
-          </div>
-        </div>
+        <StatCard 
+          icon="📅" 
+          label="Ca làm tuần này" 
+          value={stats.totalShiftsThisWeek} 
+          onClick={navigationHandlers.shifts}
+        />
+        <StatCard 
+          icon="⏰" 
+          label="Giờ làm tuần này" 
+          value={`${stats.totalHoursThisWeek}h`} 
+          onClick={navigationHandlers.attendance}
+        />
+        <StatCard 
+          icon="💰" 
+          label="Lương tháng này" 
+          value={`${stats.estimatedSalary}đ`} 
+          onClick={navigationHandlers.salary}
+        />
+        <StatCard 
+          icon="🏢" 
+          label="Chỗ làm" 
+          value={stats.totalWorkplaces} 
+          onClick={navigationHandlers.workplaces}
+        />
       </div>
 
-      {/* Ca làm sắp tới */}
+      {/* Upcoming Shifts Section */}
       <div className="upcoming-section">
         <div className="section-header">
           <h3>📋 Ca làm sắp tới</h3>
-          <button className="view-all-btn" onClick={goToShifts}>Xem tất cả →</button>
+          <button className="view-all-btn" onClick={navigationHandlers.shifts}>Xem tất cả →</button>
         </div>
-        {dashboardData?.stats?.upcomingShifts?.length > 0 ? (
+        {upcomingShifts.length > 0 ? (
           <div className="upcoming-list">
-            {dashboardData.stats.upcomingShifts.map((shift) => (
-              <div 
+            {upcomingShifts.map((shift) => (
+              <UpcomingShiftItem 
                 key={shift.id} 
-                className="upcoming-item"
-                onClick={() => navigate("/shift")}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="upcoming-date">
-                  {new Date(shift.shift_date).toLocaleDateString("vi-VN")}
-                </div>
-                <div className="upcoming-time">
-                  {shift.start_time?.slice(0,5)} - {shift.end_time?.slice(0,5)}
-                </div>
-                <div className="upcoming-place">{shift.workplace_name}</div>
-                {shift.holiday_type === 'holiday' && (
-                  <div className="holiday-badge">🎉 Ngày lễ (x2)</div>
-                )}
-              </div>
+                shift={shift} 
+                onClick={navigationHandlers.shifts}
+              />
             ))}
           </div>
         ) : (
-          <div className="empty-data" onClick={goToShifts} style={{ cursor: "pointer" }}>
+          <div className="empty-data" onClick={navigationHandlers.shifts} style={{ cursor: "pointer" }}>
             📭 Chưa có ca làm sắp tới. Bấm để đăng ký ca mới
           </div>
         )}
       </div>
 
-      {/* Thống kê nhanh tháng */}
+      {/* Monthly Statistics Section */}
       <div className="month-stats">
         <div className="section-header">
-          <h3>📊 Thống kê tháng {new Date().getMonth() + 1}/{new Date().getFullYear()}</h3>
-          <button className="view-all-btn" onClick={goToSalary}>Xem chi tiết →</button>
+          <h3>📊 Thống kê tháng {currentDate}</h3>
+          <button className="view-all-btn" onClick={navigationHandlers.salary}>Xem chi tiết →</button>
         </div>
         <div className="month-stats-grid">
-          <div className="month-stat-card" onClick={goToShifts} style={{ cursor: "pointer" }}>
-            <div className="month-stat-value">{dashboardData?.stats?.totalShiftsThisMonth || 0}</div>
-            <div className="month-stat-label">Tổng ca</div>
-          </div>
-          <div className="month-stat-card" onClick={goToAttendance} style={{ cursor: "pointer" }}>
-            <div className="month-stat-value">{dashboardData?.stats?.totalHoursThisMonth || 0}h</div>
-            <div className="month-stat-label">Tổng giờ</div>
-          </div>
-          <div className="month-stat-card" onClick={goToSalary} style={{ cursor: "pointer" }}>
-            <div className="month-stat-value salary">
-              {(dashboardData?.stats?.estimatedSalary || 0).toLocaleString()}đ
-            </div>
-            <div className="month-stat-label">Tổng lương</div>
-          </div>
+          <MonthStatCard 
+            label="Tổng ca" 
+            value={stats.totalShiftsThisMonth} 
+            onClick={navigationHandlers.shifts}
+          />
+          <MonthStatCard 
+            label="Tổng giờ" 
+            value={`${stats.totalHoursThisMonth}h`} 
+            onClick={navigationHandlers.attendance}
+          />
+          <MonthStatCard 
+            label="Tổng lương" 
+            value={`${stats.estimatedSalary}đ`} 
+            onClick={navigationHandlers.salary}
+            isSalary={true}
+          />
         </div>
       </div>
     </div>

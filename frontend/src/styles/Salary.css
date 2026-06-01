@@ -9,6 +9,23 @@
   position: relative;
 }
 
+/* ================= REFRESHING OVERLAY ================= */
+.refreshing-overlay {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 12px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
 /* ================= TOAST NOTIFICATION ================= */
 .toast-notification {
   position: fixed;
@@ -23,6 +40,7 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   color: #ffffff !important;
   font-family: inherit;
+  max-width: calc(100% - 40px);
 }
 
 .toast-notification.success {
@@ -43,6 +61,17 @@
   to {
     transform: translateX(0);
     opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -71,6 +100,7 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   display: inline-flex;
+  flex-wrap: wrap;
 }
 
 .view-btn {
@@ -156,6 +186,10 @@
 }
 
 /* Loading Skeleton */
+.loading-skeleton {
+  animation: fadeIn 0.3s ease;
+}
+
 .skeleton-filter-bar {
   height: 80px;
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -262,6 +296,7 @@
 
 .table-wrapper {
   overflow-x: auto;
+  border-radius: 8px;
 }
 
 .salary-table {
@@ -325,13 +360,6 @@
 }
 
 /* Workplace Salary Cards */
-.workplace-salary {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
 .workplace-list {
   margin-top: 20px;
 }
@@ -409,7 +437,7 @@
   border-radius: 16px;
   padding: 24px;
   margin-top: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .chart-title-section {
@@ -467,6 +495,8 @@
   align-items: center;
   margin-bottom: 6px;
   font-size: 13px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .bar-chart-name {
@@ -502,7 +532,7 @@
   color: white;
   font-size: 12px;
   font-weight: 600;
-  text-shadow: 0 0 2px rgba(0,0,0,0.3);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Pie Legend */
@@ -536,6 +566,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .legend-info {
@@ -564,121 +595,6 @@
   color: #666;
 }
 
-/* Total Salary Banner */
-.total-salary-banner {
-  animation: fadeInUp 0.5s ease;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Content Transition */
-.content-wrapper {
-  transition: opacity 0.2s ease;
-}
-
-.content-wrapper > div {
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .salary-page {
-    padding: 15px;
-  }
-
-  .title {
-    font-size: 24px;
-  }
-
-  .view-toggle {
-    width: 100%;
-    justify-content: stretch;
-  }
-
-  .view-btn {
-    flex: 1;
-    text-align: center;
-    font-size: 13px;
-    padding: 8px 12px;
-  }
-
-  .filter-bar {
-    flex-direction: column;
-  }
-
-  .filter-group {
-    width: 100%;
-  }
-
-  .filter-group select {
-    width: 100%;
-  }
-
-  .summary-cards {
-    grid-template-columns: 1fr;
-  }
-
-  .summary-value {
-    font-size: 24px;
-  }
-
-  .workplace-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .stat {
-    justify-content: space-between;
-  }
-
-  /* Chart responsive */
-  .bar-chart-bar {
-    min-width: 30px;
-  }
-  
-  .bar-chart-percent {
-    font-size: 10px;
-  }
-  
-  .legend-item {
-    min-width: 100%;
-  }
-  
-  .legend-info {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  /* Toast responsive */
-  .toast-notification {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    padding: 12px 18px;
-    font-size: 13px;
-    text-align: center;
-  }
-}
-
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
@@ -703,7 +619,8 @@
 @media print {
   .view-toggle,
   .filter-bar,
-  .toast-notification {
+  .toast-notification,
+  .refreshing-overlay {
     display: none;
   }
 
@@ -714,12 +631,13 @@
 
   .summary-card,
   .salary-table-container,
-  .workplace-salary,
-  .chart-salary {
+  .workplace-salary-card,
+  .chart-container {
     box-shadow: none;
     border: 1px solid #ddd;
   }
 }
+
 /* ================= RESPONSIVE FOR MOBILE ================= */
 
 /* Mobile nhỏ (dưới 480px) */
@@ -742,7 +660,7 @@
     flex: 1;
     text-align: center;
     font-size: 12px;
-    padding: 8px 6px;
+    padding: 10px 6px;
   }
 
   .filter-bar {
@@ -756,7 +674,7 @@
 
   .filter-group select {
     width: 100%;
-    padding: 10px 12px;
+    padding: 12px;
     font-size: 13px;
   }
 
@@ -774,11 +692,11 @@
   }
 
   .summary-icon {
-    font-size: 36px;
+    font-size: 32px;
   }
 
   .summary-value {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   .summary-label {
@@ -787,7 +705,6 @@
 
   .salary-table-container {
     padding: 12px;
-    overflow-x: auto;
   }
 
   .table-title {
@@ -836,13 +753,20 @@
     padding: 15px;
   }
 
+  .chart-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .chart-title-section h3 {
     font-size: 15px;
   }
 
   .chart-reset-btn {
-    padding: 6px 12px;
-    font-size: 11px;
+    padding: 8px 16px;
+    font-size: 12px;
+    width: 100%;
+    text-align: center;
   }
 
   .bar-chart-label {
@@ -875,7 +799,7 @@
 
   .legend-item {
     min-width: 100%;
-    padding: 6px 10px;
+    padding: 8px 12px;
   }
 
   .legend-name,
@@ -892,14 +816,21 @@
     top: 10px;
     right: 10px;
     left: 10px;
-    padding: 10px 16px;
-    font-size: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
     text-align: center;
   }
 
   .empty-data {
-    padding: 30px;
+    padding: 30px 20px;
     font-size: 13px;
+  }
+
+  .refreshing-overlay {
+    top: 5px;
+    right: 5px;
+    padding: 6px 12px;
+    font-size: 10px;
   }
 }
 
@@ -967,7 +898,6 @@
 /* Cải thiện touch targets trên mobile */
 @media (max-width: 768px) {
   .view-btn,
-  .control-btn,
   .chart-reset-btn,
   .filter-group select {
     min-height: 44px;
@@ -978,7 +908,6 @@
     cursor: pointer;
   }
 
-  .stat-card,
   .summary-card,
   .workplace-salary-card {
     cursor: pointer;
@@ -1004,5 +933,59 @@
 
   .workplace-stats {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .salary-page {
+    background: #1a1a2e;
+  }
+  
+  .summary-card,
+  .salary-table-container,
+  .chart-container,
+  .filter-bar,
+  .view-toggle {
+    background: #16213e;
+  }
+  
+  .title,
+  .summary-value,
+  .table-title,
+  .workplace-name,
+  .legend-name {
+    color: #eee;
+  }
+  
+  .summary-label,
+  .stat-label,
+  .empty-data {
+    color: #aaa;
+  }
+  
+  .salary-table td {
+    color: #ccc;
+    border-bottom-color: #2a2a4a;
+  }
+  
+  .salary-table thead {
+    background: #1a1a3e;
+  }
+  
+  .salary-table th {
+    color: #ddd;
+  }
+  
+  .workplace-salary-card {
+    background: #1a1a3e;
+  }
+  
+  .legend-item {
+    background: #1a1a3e;
+  }
+  
+  .legend-item:hover {
+    background: #2a2a5e;
   }
 }

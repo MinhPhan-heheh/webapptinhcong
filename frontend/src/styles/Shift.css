@@ -1,17 +1,82 @@
-/* Giữ nguyên CSS cũ, chỉ cần thêm/giữ lại các phần sau */
-
+/* Reset & Base */
 .shift-page {
   padding: 16px;
   background: #f5f7fa;
   min-height: 100vh;
+  position: relative;
 }
 
+/* Refreshing Overlay */
+.refreshing-overlay {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Loading Spinner */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e9ecef;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #007bff;
+  font-weight: 500;
+}
+
+/* Top Bar */
 .top-bar {
   margin-bottom: 16px;
   padding: 16px 20px;
   background: white;
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .title {
@@ -27,6 +92,7 @@
   color: #666;
 }
 
+/* Filter Bar */
 .filter-bar {
   margin-bottom: 16px;
 }
@@ -38,8 +104,21 @@
   border-radius: 12px;
   font-size: 14px;
   background: white;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
+.filter-select:hover {
+  border-color: #007bff;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+}
+
+/* Controls Bar */
 .controls-bar {
   background: white;
   border-radius: 12px;
@@ -66,6 +145,16 @@
   border-radius: 8px;
   cursor: pointer;
   font-size: 14px;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: #dee2e6;
+  transform: translateY(-1px);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
 }
 
 .today-btn {
@@ -73,11 +162,17 @@
   color: white;
 }
 
+.today-btn:hover {
+  background: #0056b3;
+}
+
 .month-select {
   padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 14px;
+  cursor: pointer;
+  background: white;
 }
 
 .week-info {
@@ -85,8 +180,10 @@
   background: #e9ecef;
   border-radius: 8px;
   font-size: 13px;
+  font-weight: 500;
 }
 
+/* Grid */
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -97,10 +194,16 @@
   background: white;
   border-radius: 16px;
   padding: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   min-height: 280px;
+  transition: all 0.2s;
+}
+
+.day-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .today-card {
@@ -114,6 +217,10 @@
   border-bottom: 1px solid #eee;
   margin-bottom: 10px;
   position: relative;
+}
+
+.today-card .card-header {
+  border-bottom-color: rgba(255, 255, 255, 0.3);
 }
 
 .day-name {
@@ -141,6 +248,10 @@
   color: #999;
 }
 
+.today-card .month-name {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .shift-count {
   position: absolute;
   top: -8px;
@@ -150,6 +261,7 @@
   border-radius: 20px;
   padding: 2px 8px;
   font-size: 10px;
+  font-weight: 600;
 }
 
 .shifts-list {
@@ -159,6 +271,22 @@
   overflow-y: auto;
 }
 
+/* Scrollbar for shifts-list */
+.shifts-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.shifts-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.shifts-list::-webkit-scrollbar-thumb {
+  background: #007bff;
+  border-radius: 4px;
+}
+
+/* Shift Card */
 .shift-card {
   background: #f8f9fa;
   border-radius: 10px;
@@ -166,6 +294,12 @@
   margin-bottom: 8px;
   border-left: 3px solid #007bff;
   position: relative;
+  transition: all 0.2s;
+}
+
+.shift-card:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .shift-card.holiday {
@@ -188,6 +322,17 @@
   font-size: 11px;
   padding: 4px;
   border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.edit-btn:hover {
+  background: rgba(40, 167, 69, 0.1);
+  transform: scale(1.1);
+}
+
+.delete-btn:hover {
+  background: rgba(220, 53, 69, 0.1);
+  transform: scale(1.1);
 }
 
 .edit-btn {
@@ -229,6 +374,7 @@
   font-size: 12px;
 }
 
+/* Add Button */
 .add-btn {
   width: 100%;
   padding: 10px;
@@ -240,6 +386,16 @@
   font-size: 13px;
   font-weight: 600;
   margin-top: auto;
+  transition: all 0.2s;
+}
+
+.add-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.add-btn:active {
+  transform: scale(0.98);
 }
 
 .today-card .add-btn {
@@ -247,6 +403,11 @@
   color: #333;
 }
 
+.today-card .add-btn:hover {
+  background: #ffc107;
+}
+
+/* FAB Button */
 .fab {
   position: fixed;
   bottom: 20px;
@@ -259,17 +420,29 @@
   border: none;
   font-size: 28px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 100;
+  transition: all 0.2s;
 }
 
+.fab:hover {
+  background: #0056b3;
+  transform: scale(1.05);
+}
+
+.fab:active {
+  transform: scale(0.95);
+}
+
+/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -283,12 +456,27 @@
   padding: 20px;
   width: 100%;
   max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal-box h2 {
   margin: 0 0 20px;
   font-size: 20px;
   text-align: center;
+  color: #333;
 }
 
 .form-group {
@@ -309,6 +497,13 @@
   border: 1px solid #ddd;
   border-radius: 10px;
   font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-group input:focus, .form-group select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
 .modal-buttons {
@@ -324,6 +519,15 @@
   border-radius: 10px;
   cursor: pointer;
   font-weight: 500;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover, .save-btn:hover {
+  transform: translateY(-1px);
+}
+
+.cancel-btn:active, .save-btn:active {
+  transform: scale(0.98);
 }
 
 .cancel-btn {
@@ -336,22 +540,7 @@
   color: white;
 }
 
-.loading-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(255,255,255,0.9);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-  font-size: 16px;
-  color: #007bff;
-}
-
-/* ================= TOAST NOTIFICATION ================= */
+/* Toast Notification */
 .toast-notification {
   position: fixed;
   top: 20px;
@@ -364,7 +553,7 @@
   animation: slideInRight 0.3s ease;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   color: #ffffff !important;
-  font-family: inherit;
+  max-width: calc(100% - 40px);
 }
 
 .toast-notification.success {
@@ -388,48 +577,43 @@
   }
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
+/* ================= RESPONSIVE ================= */
+
+/* Tablet nhỏ (dưới 900px) */
+@media (max-width: 900px) {
   .week-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
+/* Tablet (dưới 768px) */
 @media (max-width: 768px) {
   .shift-page {
     padding: 12px;
   }
+  
   .week-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
   }
+  
   .controls-bar {
     flex-direction: column;
   }
+  
   .month-controls, .week-controls {
     width: 100%;
     justify-content: center;
   }
   
-  /* Toast responsive */
-  .toast-notification {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    padding: 12px 18px;
-    font-size: 13px;
-    text-align: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .week-grid {
-    grid-template-columns: 1fr;
-  }
-  .title {
-    font-size: 18px;
+  .day-card {
+    min-height: auto;
   }
   
-  /* Toast responsive */
+  .shifts-list {
+    max-height: 200px;
+  }
+  
   .toast-notification {
     top: 10px;
     right: 10px;
@@ -438,91 +622,94 @@
     font-size: 13px;
     text-align: center;
   }
+  
+  .refreshing-overlay {
+    top: 5px;
+    right: 5px;
+    padding: 5px 10px;
+    font-size: 10px;
+  }
 }
-/* ... toàn bộ CSS hiện tại của bạn ... */
 
-/* ================= RESPONSIVE FOR MOBILE ================= */
-
-/* Mobile nhỏ (dưới 480px) */
+/* Mobile (dưới 480px) */
 @media (max-width: 480px) {
   .shift-page {
     padding: 8px;
   }
-
+  
   .top-bar {
     padding: 12px;
     margin-bottom: 10px;
   }
-
+  
   .title {
     font-size: 18px;
   }
-
+  
   .subtitle {
     font-size: 11px;
   }
-
+  
   .filter-select {
     padding: 8px 10px;
     font-size: 13px;
   }
-
+  
   .controls-bar {
     padding: 8px;
   }
-
+  
   .month-controls, .week-controls {
     gap: 4px;
   }
-
+  
   .control-btn {
     padding: 6px 10px;
     font-size: 12px;
     min-width: 40px;
     min-height: 40px;
   }
-
+  
   .month-select {
     padding: 6px 8px;
     font-size: 12px;
   }
-
+  
   .week-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-
+  
   .day-card {
-    min-height: auto;
     padding: 10px;
   }
-
+  
   .day-number {
     font-size: 20px;
   }
-
+  
   .shifts-list {
     max-height: 180px;
   }
-
+  
   .shift-card {
     padding: 8px;
   }
-
+  
   .shift-time {
     font-size: 11px;
   }
-
+  
   .shift-location {
     font-size: 10px;
   }
-
+  
   .add-btn {
     padding: 8px;
     font-size: 12px;
     min-height: 40px;
   }
-
+  
   .fab {
     width: 48px;
     height: 48px;
@@ -530,39 +717,39 @@
     bottom: 15px;
     right: 15px;
   }
-
+  
   /* Modal responsive */
   .modal-box {
     padding: 15px;
     margin: 10px;
     max-width: 95%;
   }
-
+  
   .modal-box h2 {
     font-size: 18px;
     margin-bottom: 15px;
   }
-
+  
   .form-group label {
     font-size: 12px;
   }
-
+  
   .form-group input, .form-group select {
     padding: 10px;
-    font-size: 14px;
+    font-size: 13px;
   }
-
+  
   .modal-buttons {
     flex-direction: column;
     gap: 10px;
   }
-
+  
   .modal-buttons button {
     width: 100%;
     padding: 12px;
     font-size: 14px;
   }
-
+  
   /* Tăng vùng chạm cho nút */
   .edit-btn, .delete-btn {
     padding: 8px;
@@ -570,50 +757,13 @@
     min-width: 36px;
     min-height: 36px;
   }
-
-  /* Toast */
+  
   .toast-notification {
     top: 10px;
     right: 10px;
     left: 10px;
     padding: 10px 16px;
     font-size: 12px;
-    text-align: center;
-  }
-}
-
-/* Tablet (481px - 768px) */
-@media (min-width: 481px) and (max-width: 768px) {
-  .shift-page {
-    padding: 12px;
-  }
-
-  .week-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-
-  .day-card {
-    min-height: auto;
-  }
-
-  .shifts-list {
-    max-height: 200px;
-  }
-
-  .control-btn {
-    padding: 8px 12px;
-  }
-
-  .fab {
-    width: 52px;
-    height: 52px;
-    bottom: 18px;
-    right: 18px;
-  }
-
-  .modal-buttons {
-    flex-direction: row;
   }
 }
 
@@ -621,5 +771,96 @@
 @media (min-width: 769px) and (max-width: 1024px) {
   .week-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Landscape mode trên mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .week-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .day-card {
+    min-height: 240px;
+  }
+  
+  .shifts-list {
+    max-height: 150px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .shift-page {
+    background: #1a1a2e;
+  }
+  
+  .top-bar,
+  .controls-bar,
+  .day-card,
+  .filter-select,
+  .month-select,
+  .modal-box {
+    background: #16213e;
+  }
+  
+  .title,
+  .day-number,
+  .modal-box h2,
+  .form-group label {
+    color: #eee;
+  }
+  
+  .subtitle,
+  .week-info,
+  .empty-box {
+    color: #aaa;
+  }
+  
+  .shift-card {
+    background: #1a1a3e;
+  }
+  
+  .shift-location {
+    color: #ccc;
+  }
+  
+  .control-btn:not(.today-btn) {
+    background: #2a2a4a;
+    color: #ddd;
+  }
+  
+  .filter-select,
+  .month-select {
+    border-color: #2a2a4a;
+    color: #ddd;
+  }
+  
+  .loading-overlay {
+    background: rgba(22, 30, 62, 0.95);
+  }
+}
+
+/* Print styles */
+@media print {
+  .fab,
+  .add-btn,
+  .shift-actions,
+  .controls-bar,
+  .filter-bar,
+  .toast-notification,
+  .refreshing-overlay,
+  .loading-overlay {
+    display: none;
+  }
+  
+  .shift-page {
+    background: white;
+    padding: 0;
+  }
+  
+  .day-card {
+    box-shadow: none;
+    border: 1px solid #ddd;
   }
 }

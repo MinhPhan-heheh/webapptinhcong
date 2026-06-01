@@ -9,6 +9,11 @@ import React, {
 import api from "../services/api";
 import "../styles/Salary.css";
 
+// Constants
+const TOAST_DURATION = 3000;
+const COLORS = ["#28a745", "#ff9800", "#dc3545", "#007bff", "#6f42c1", "#20c997", "#fd7e14", "#e83e8c"];
+
+// Memoized Components
 const SummaryCard = memo(({ icon, label, value }) => (
   <div className="summary-card">
     <div className="summary-icon">{icon}</div>
@@ -19,98 +24,108 @@ const SummaryCard = memo(({ icon, label, value }) => (
   </div>
 ));
 
-const LoadingSkeleton = () => (
+const LoadingSkeleton = memo(() => (
   <div className="loading-skeleton">
     <div className="skeleton-card"></div>
     <div className="skeleton-card"></div>
     <div className="skeleton-card"></div>
     <div className="skeleton-table"></div>
   </div>
-);
+));
+
+const Toast = memo(({ show, message, type }) => {
+  if (!show) return null;
+  return (
+    <div className={`toast-notification ${type}`}>
+      {type === "error" ? "❌ " : "✅ "}{message}
+    </div>
+  );
+});
+
+const SalaryTableRow = memo(({ item, formatDate, formatCurrency }) => (
+  <tr className={item.holiday_type === "holiday" ? "holiday-row" : ""}>
+    <td>{formatDate(item.shift_date)}</td>
+    <td>{item.workplace_name}</td>
+    <td>{item.start_time} - {item.end_time}</td>
+    <td>{item.work_hours}h</td>
+    <td>{formatCurrency(item.base_salary)}/h</td>
+    <td>{item.holiday_rate === 1 ? "" : `x${item.holiday_rate}`}</td>
+    <td className="salary-amount">{formatCurrency(item.shift_salary)}</td>
+  </tr>
+));
+
+const WorkplaceCard = memo(({ item, formatCurrency }) => (
+  <div className="workplace-salary-card">
+    <div className="workplace-name">🏢 {item.workplace_name}</div>
+    <div className="workplace-stats">
+      <div className="stat">📋 {item.total_shifts} ca</div>
+      <div className="stat">⏰ {item.total_hours} giờ</div>
+      <div className="stat salary">💰 {formatCurrency(item.total_salary)}</div>
+    </div>
+  </div>
+));
+
+const BarChartItem = memo(({ item, total, color, formatCurrency }) => {
+  const percent = total > 0 ? (item.total_salary / total) * 100 : 0;
+  return (
+    <div className="bar-chart-item">
+      <div className="bar-chart-label">
+        <span className="bar-chart-name">{item.workplace_name}</span>
+        <span className="bar-chart-value">{formatCurrency(item.total_salary)}</span>
+      </div>
+      <div className="bar-chart-bar-wrapper">
+        <div 
+          className="bar-chart-bar"
+          style={{ width: `${percent}%`, backgroundColor: color }}
+        >
+          <span className="bar-chart-percent">{percent.toFixed(1)}%</span>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 function Salary() {
-  const [selectedYear, setSelectedYear] = useState(
-    new Date().getFullYear()
-  );
-
-  const [selectedMonth, setSelectedMonth] = useState(
-    new Date().getMonth() + 1
-  );
-
-  const [selectedWorkplace, setSelectedWorkplace] =
-    useState("all");
-
-  const [workplaceFilter, setWorkplaceFilter] =
-    useState("all");
-
+  // State
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedWorkplace, setSelectedWorkplace] = useState("all");
+  const [workplaceFilter, setWorkplaceFilter] = useState("all");
   const [chartFilter, setChartFilter] = useState("all");
-
   const [selectedWeek, setSelectedWeek] = useState("all");
-
   const [salaryData, setSalaryData] = useState(null);
-
   const [allWorkplaces, setAllWorkplaces] = useState([]);
-
-  const [workplaceSalaryData, setWorkplaceSalaryData] =
-    useState([]);
-
+  const [workplaceSalaryData, setWorkplaceSalaryData] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const [viewMode, setViewMode] = useState("detail");
-
-  const [toast, setToast] = useState({
-    show: false,
-    message: "",
-    type: "",
+  const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    return localStorage.getItem("salary_view_mode") || "detail";
   });
+  const [toast, setToast] = useState({ show: false, message: "", type: "" });
 
-  const showToast = useCallback(
-    (message, type = "success") => {
-      setToast({
-        show: true,
-        message,
-        type,
-      });
-
-      setTimeout(() => {
-        setToast({
-          show: false,
-          message: "",
-          type: "",
-        });
-      }, 3000);
-    },
-    []
-  );
-
-  const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    return Array.from(
-      { length: 5 },
-      (_, i) => currentYear - 2 + i
-    );
+  const showToast = useCallback((message, type = "success") => {
+    setToast({ show: true, message, type });
+    const timer = setTimeout(() => {
+      setToast({ show: false, message: "", type: "" });
+    }, TOAST_DURATION);
+    return () => clearTimeout(timer);
   }, []);
 
-  const months = [
-    1, 2, 3, 4, 5, 6,
-    7, 8, 9, 10, 11, 12,
-  ];
+  // Save view mode
+  const handleViewModeChange = useCallback((mode) => {
+    setViewMode(mode);
+    localStorage.setItem("salary_view_mode", mode);
+  }, []);
 
-  const colors = [
-    "#28a745",
-    "#ff9800",
-    "#dc3545",
-    "#007bff",
-    "#6f42c1",
-    "#20c997",
-    "#fd7e14",
-    "#e83e8c",
-  ];
+  // Years and months
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  }, []);
 
-  // =========================
-  // TÍNH TUẦN TRONG THÁNG
-  // =========================
+  const months = useMemo(() => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], []);
 
+  // Get weeks in month
   const getWeeksInMonth = useCallback((year, month) => {
     const firstDayOfMonth = new Date(year, month - 1, 1);
     const lastDayOfMonth = new Date(year, month, 0);
@@ -142,7 +157,6 @@ function Salary() {
         startDay = 1;
         startMonth = month;
       }
-
       if (endMonth > month) {
         endDay = lastDate;
         endMonth = month;
@@ -155,7 +169,6 @@ function Salary() {
         } else {
           label += ` (${startDay}/${month} - ${endDay}/${month})`;
         }
-
         weeks.push({
           week: weekNumber,
           label,
@@ -165,11 +178,9 @@ function Salary() {
           endDate: new Date(year, month - 1, endDay),
         });
       }
-
       weekStart.setDate(weekStart.getDate() + 7);
       weekNumber++;
     }
-
     return weeks;
   }, []);
 
@@ -177,45 +188,62 @@ function Salary() {
     return getWeeksInMonth(selectedYear, selectedMonth);
   }, [selectedYear, selectedMonth, getWeeksInMonth]);
 
-  // =========================
-  // LOAD DATA
-  // =========================
-
+  // Fetch data
   const fetchWorkplaces = useCallback(async () => {
     try {
       const response = await api.get("/api/workplaces/my");
-
       if (response.data.success) {
         setAllWorkplaces(response.data.workplaces || []);
       }
     } catch (error) {
       console.error("Lỗi fetch workplaces:", error);
-      showToast("❌ Không thể tải danh sách chỗ làm", "error");
+      if (error.response?.status !== 401) {
+        showToast("Không thể tải danh sách chỗ làm", "error");
+      }
     }
   }, [showToast]);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (isRefresh = false) => {
+    const controller = new AbortController();
+    
     try {
-      setLoading(true);
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
 
       const [salaryRes, workplaceRes] = await Promise.all([
-        api.get(`/api/salary/calculate?year=${selectedYear}&month=${selectedMonth}`),
-        api.get(`/api/salary/by-workplace?year=${selectedYear}&month=${selectedMonth}`),
+        api.get(`/api/salary/calculate?year=${selectedYear}&month=${selectedMonth}`, {
+          signal: controller.signal
+        }),
+        api.get(`/api/salary/by-workplace?year=${selectedYear}&month=${selectedMonth}`, {
+          signal: controller.signal
+        }),
       ]);
 
       if (salaryRes.data.success) {
         setSalaryData(salaryRes.data);
       }
-
       if (workplaceRes.data.success) {
         setWorkplaceSalaryData(workplaceRes.data.details || []);
       }
     } catch (error) {
-      console.error("Lỗi load data:", error);
-      showToast("❌ Không thể tải dữ liệu lương", "error");
+      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+        console.error("Lỗi load data:", error);
+        if (error.response?.status !== 401) {
+          showToast("Không thể tải dữ liệu lương", "error");
+        }
+      }
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+    
+    return () => controller.abort();
   }, [selectedYear, selectedMonth, showToast]);
 
   useEffect(() => {
@@ -223,14 +251,19 @@ function Salary() {
     fetchWorkplaces();
   }, [loadData, fetchWorkplaces]);
 
-  // =========================
-  // FORMAT
-  // =========================
+  // Auto refresh every 5 minutes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && !refreshing) {
+        loadData(true);
+      }
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [loadData, loading, refreshing]);
 
+  // Format functions
   const formatCurrency = useCallback((amount) => {
-    if (!amount && amount !== 0) {
-      return "0₫";
-    }
+    if (!amount && amount !== 0) return "0₫";
     return Number(amount).toLocaleString("vi-VN") + "₫";
   }, []);
 
@@ -239,16 +272,12 @@ function Salary() {
     return new Date(date).toLocaleDateString("vi-VN");
   }, []);
 
-  // =========================
-  // FILTER DETAIL
-  // =========================
-
+  // Filtered data
   const filteredSalaryData = useMemo(() => {
     if (!salaryData) return null;
 
     let details = salaryData.details || [];
 
-    // lọc tuần
     if (selectedWeek !== "all") {
       const weekInfo = weeksInMonth.find((w) => w.week === Number(selectedWeek));
       if (weekInfo) {
@@ -259,7 +288,6 @@ function Salary() {
       }
     }
 
-    // lọc chỗ làm
     if (selectedWorkplace !== "all") {
       details = details.filter((item) => item.workplace_id === Number(selectedWorkplace));
     }
@@ -273,10 +301,6 @@ function Salary() {
     };
   }, [salaryData, selectedWeek, selectedWorkplace, weeksInMonth]);
 
-  // =========================
-  // WORKPLACE DATA
-  // =========================
-
   const filteredWorkplaceData = useMemo(() => {
     let data = [...workplaceSalaryData];
     if (workplaceFilter !== "all") {
@@ -284,10 +308,6 @@ function Salary() {
     }
     return data;
   }, [workplaceSalaryData, workplaceFilter]);
-
-  // =========================
-  // CHART DATA
-  // =========================
 
   const chartData = useMemo(() => {
     let data = [...workplaceSalaryData];
@@ -297,26 +317,15 @@ function Salary() {
     return data;
   }, [workplaceSalaryData, chartFilter]);
 
-  // =========================
-  // TOTAL
-  // =========================
-
+  // Total values
   const totalSalary = filteredSalaryData?.total_salary || 0;
   const totalHours = filteredSalaryData?.total_hours || 0;
   const totalShifts = filteredSalaryData?.total_shifts || 0;
+  const chartTotal = useMemo(() => {
+    return chartData.reduce((sum, i) => sum + Number(i.total_salary || 0), 0);
+  }, [chartData]);
 
-  const currentWeekInfo = useMemo(() => {
-    if (selectedWeek !== "all") {
-      return weeksInMonth.find((w) => w.week === Number(selectedWeek));
-    }
-    return null;
-  }, [selectedWeek, weeksInMonth]);
-
-  // =========================
-  // LOADING
-  // =========================
-
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <div className="salary-page">
         <div className="salary-header">
@@ -329,25 +338,19 @@ function Salary() {
 
   return (
     <div className="salary-page">
-      {toast.show && (
-        <div className={`toast-notification ${toast.type}`}>
-          {toast.type === "error" ? "❌ " : "✅ "}
-          {toast.message}
-        </div>
-      )}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
+      
+      {refreshing && <div className="refreshing-overlay">🔄 Đang cập nhật...</div>}
 
       <div className="salary-header">
         <h1 className="title">💰 Quản lý lương</h1>
       </div>
 
-      {/* FILTER */}
+      {/* Filter Bar */}
       <div className="filter-bar">
         <div className="filter-group">
           <label>NĂM</label>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-          >
+          <select value={selectedYear} onChange={(e) => setSelectedYear(Number(e.target.value))}>
             {years.map((year) => (
               <option key={year} value={year}>Năm {year}</option>
             ))}
@@ -371,10 +374,7 @@ function Salary() {
 
         <div className="filter-group">
           <label>📅 TUẦN</label>
-          <select
-            value={selectedWeek}
-            onChange={(e) => setSelectedWeek(e.target.value)}
-          >
+          <select value={selectedWeek} onChange={(e) => setSelectedWeek(e.target.value)}>
             <option value="all">📋 Tất cả</option>
             {weeksInMonth.map((week) => (
               <option key={week.week} value={week.week}>{week.label}</option>
@@ -385,10 +385,7 @@ function Salary() {
         {viewMode === "detail" && (
           <div className="filter-group">
             <label>🏢 CHỖ LÀM</label>
-            <select
-              value={selectedWorkplace}
-              onChange={(e) => setSelectedWorkplace(e.target.value)}
-            >
+            <select value={selectedWorkplace} onChange={(e) => setSelectedWorkplace(e.target.value)}>
               <option value="all">📋 Tất cả</option>
               {allWorkplaces.map((w) => (
                 <option key={w.id} value={w.id}>🏢 {w.name}</option>
@@ -398,29 +395,29 @@ function Salary() {
         )}
       </div>
 
-      {/* TAB */}
+      {/* Tab View */}
       <div className="view-toggle">
         <button
           className={`view-btn ${viewMode === "detail" ? "active" : ""}`}
-          onClick={() => setViewMode("detail")}
+          onClick={() => handleViewModeChange("detail")}
         >
           📋 Chi tiết
         </button>
         <button
           className={`view-btn ${viewMode === "workplace" ? "active" : ""}`}
-          onClick={() => setViewMode("workplace")}
+          onClick={() => handleViewModeChange("workplace")}
         >
           🏢 Theo chỗ làm
         </button>
         <button
           className={`view-btn ${viewMode === "chart" ? "active" : ""}`}
-          onClick={() => setViewMode("chart")}
+          onClick={() => handleViewModeChange("chart")}
         >
           📊 Biểu đồ
         </button>
       </div>
 
-      {/* DETAIL */}
+      {/* Detail View */}
       {viewMode === "detail" && (
         <>
           <div className="summary-cards">
@@ -447,15 +444,12 @@ function Salary() {
                 <tbody>
                   {filteredSalaryData?.details?.length > 0 ? (
                     filteredSalaryData.details.map((item, idx) => (
-                      <tr key={idx} className={item.holiday_type === "holiday" ? "holiday-row" : ""}>
-                        <td>{formatDate(item.shift_date)}</td>
-                        <td>{item.workplace_name}</td>
-                        <td>{item.start_time} - {item.end_time}</td>
-                        <td>{item.work_hours}h</td>
-                        <td>{formatCurrency(item.base_salary)}/h</td>
-                        <td>{item.holiday_rate === 1 ? "" : `x${item.holiday_rate}`}</td>
-                        <td className="salary-amount">{formatCurrency(item.shift_salary)}</td>
-                      </tr>
+                      <SalaryTableRow 
+                        key={idx} 
+                        item={item} 
+                        formatDate={formatDate} 
+                        formatCurrency={formatCurrency}
+                      />
                     ))
                   ) : (
                     <tr>
@@ -469,19 +463,12 @@ function Salary() {
         </>
       )}
 
-      {/* WORKPLACE */}
+      {/* Workplace View */}
       {viewMode === "workplace" && (
         <div className="workplace-list">
           {filteredWorkplaceData.length > 0 ? (
             filteredWorkplaceData.map((item, idx) => (
-              <div key={idx} className="workplace-salary-card">
-                <div className="workplace-name">🏢 {item.workplace_name}</div>
-                <div className="workplace-stats">
-                  <div className="stat">📋 {item.total_shifts} ca</div>
-                  <div className="stat">⏰ {item.total_hours} giờ</div>
-                  <div className="stat salary">💰 {formatCurrency(item.total_salary)}</div>
-                </div>
-              </div>
+              <WorkplaceCard key={idx} item={item} formatCurrency={formatCurrency} />
             ))
           ) : (
             <div className="empty-data">📭 Không có dữ liệu chỗ làm</div>
@@ -489,16 +476,13 @@ function Salary() {
         </div>
       )}
 
-      {/* CHART - BIỂU ĐỒ ĐÃ ĐƯỢC SỬA LẠI */}
+      {/* Chart View */}
       {viewMode === "chart" && (
         <div className="chart-container">
           <div className="chart-title-section">
             <h3>📊 Biểu đồ phân bổ lương theo chỗ làm</h3>
             {chartFilter !== "all" && (
-              <button 
-                className="chart-reset-btn"
-                onClick={() => setChartFilter("all")}
-              >
+              <button className="chart-reset-btn" onClick={() => setChartFilter("all")}>
                 🔄 Xem tất cả
               </button>
             )}
@@ -506,48 +490,28 @@ function Salary() {
           
           {chartData.length > 0 ? (
             <div className="chart-wrapper">
-              {/* Biểu đồ dạng thanh ngang */}
               <div className="bar-chart">
-                {chartData.map((item, idx) => {
-                  const total = chartData.reduce((sum, i) => sum + Number(i.total_salary || 0), 0);
-                  const percent = total > 0 ? (item.total_salary / total) * 100 : 0;
-                  return (
-                    <div key={idx} className="bar-chart-item">
-                      <div className="bar-chart-label">
-                        <span className="bar-chart-name">{item.workplace_name}</span>
-                        <span className="bar-chart-value">{formatCurrency(item.total_salary)}</span>
-                      </div>
-                      <div className="bar-chart-bar-wrapper">
-                        <div 
-                          className="bar-chart-bar"
-                          style={{ 
-                            width: `${percent}%`,
-                            backgroundColor: colors[idx % colors.length]
-                          }}
-                        >
-                          <span className="bar-chart-percent">{percent.toFixed(1)}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {chartData.map((item, idx) => (
+                  <BarChartItem 
+                    key={idx} 
+                    item={item} 
+                    total={chartTotal}
+                    color={COLORS[idx % COLORS.length]}
+                    formatCurrency={formatCurrency}
+                  />
+                ))}
               </div>
 
-              {/* Chú thích màu sắc */}
               <div className="pie-legend">
                 {chartData.map((item, idx) => {
-                  const total = chartData.reduce((sum, i) => sum + Number(i.total_salary || 0), 0);
-                  const percent = total > 0 ? ((item.total_salary / total) * 100).toFixed(1) : 0;
+                  const percent = chartTotal > 0 ? (item.total_salary / chartTotal) * 100 : 0;
                   return (
                     <div key={idx} className="legend-item">
-                      <div
-                        className="legend-color"
-                        style={{ background: colors[idx % colors.length] }}
-                      ></div>
+                      <div className="legend-color" style={{ background: COLORS[idx % COLORS.length] }}></div>
                       <div className="legend-info">
                         <span className="legend-name">{item.workplace_name}</span>
                         <span className="legend-value">{formatCurrency(item.total_salary)}</span>
-                        <span className="legend-percent">({percent}%)</span>
+                        <span className="legend-percent">({percent.toFixed(1)}%)</span>
                       </div>
                     </div>
                   );

@@ -1,10 +1,60 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import api from "../services/api";
 import "../styles/WorkplaceRegister.css";
+
+// Constants
+const TOAST_DURATION = 3000;
+
+// Memoized Components
+const Toast = memo(({ show, message, type }) => {
+  if (!show) return null;
+  return <div className={`toast-notification ${type}`}>{message}</div>;
+});
+
+const WorkplaceCard = memo(({ workplace, onEdit }) => (
+  <div className="workplace-card">
+    <div className="workplace-name">{workplace.name}</div>
+    <div className="workplace-address">📍 {workplace.address}</div>
+    <div className="workplace-stats">
+      <div className="stat-item">
+        <span className="stat-label">💰 Lương</span>
+        <span className="stat-value">{parseFloat(workplace.hourly_rate).toLocaleString()}đ/h</span>
+      </div>
+      <div className="stat-item">
+        <span className="stat-label">⚡ Tăng ca</span>
+        <span className="stat-value">{workplace.overtime_rate || 1.5}x</span>
+      </div>
+      {workplace.has_break && (
+        <div className="stat-item">
+          <span className="stat-label">🍜 Nghỉ</span>
+          <span className="stat-value">{workplace.break_minutes} phút</span>
+        </div>
+      )}
+    </div>
+    <button className="btn-edit" onClick={() => onEdit(workplace)}>✏️ Sửa</button>
+  </div>
+));
+
+const LoadingSkeleton = memo(() => (
+  <div className="loading-skeleton">
+    <div className="skeleton-card"></div>
+    <div className="skeleton-card"></div>
+    <div className="skeleton-card"></div>
+  </div>
+));
+
+const EmptyState = memo(({ onAdd }) => (
+  <div className="empty-state">
+    <div className="empty-icon">🏢</div>
+    <p>Chưa có chỗ làm nào</p>
+    <button className="btn-empty" onClick={onAdd}>+ Thêm chỗ làm ngay</button>
+  </div>
+));
 
 function WorkplaceRegister() {
   const [workplaces, setWorkplaces] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingWorkplace, setEditingWorkplace] = useState(null);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
@@ -18,33 +68,63 @@ function WorkplaceRegister() {
     overtime_rate: "1.5",
   });
 
-  // SỬA: tăng thời gian lên 3000ms và thêm icon vào message
   const showToast = useCallback((message, type = "success") => {
     const icon = type === "success" ? "✅ " : "❌ ";
     setToast({ show: true, message: icon + message, type });
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setToast({ show: false, message: "", type: "" });
-    }, 3000);
+    }, TOAST_DURATION);
+    return () => clearTimeout(timer);
   }, []);
 
-  const fetchWorkplaces = useCallback(async () => {
+  const fetchWorkplaces = useCallback(async (isRefresh = false) => {
+    const controller = new AbortController();
+    
     try {
-      setLoading(true);
-      const response = await api.get("/api/workplaces/my");
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
+      const response = await api.get("/api/workplaces/my", {
+        signal: controller.signal
+      });
 
       if (response.data.success) {
         setWorkplaces(response.data.workplaces || []);
       }
     } catch (error) {
-      showToast("Không thể tải danh sách chỗ làm", "error");
+      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+        console.error("Lỗi fetch workplaces:", error);
+        if (error.response?.status !== 401) {
+          showToast("Không thể tải danh sách chỗ làm", "error");
+        }
+      }
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+    
+    return () => controller.abort();
   }, [showToast]);
 
   useEffect(() => {
     fetchWorkplaces();
   }, [fetchWorkplaces]);
+
+  // Auto refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && !refreshing) {
+        fetchWorkplaces(true);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchWorkplaces, loading, refreshing]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,11 +140,9 @@ function WorkplaceRegister() {
     }
 
     try {
-      let response;
-
       const submitData = {
-        name: formData.name,
-        address: formData.address,
+        name: formData.name.trim(),
+        address: formData.address.trim(),
         hourly_rate: parseFloat(formData.hourly_rate),
         salary_per_hour: formData.salary_per_hour ? parseFloat(formData.salary_per_hour) : null,
         has_break: formData.has_break,
@@ -72,6 +150,7 @@ function WorkplaceRegister() {
         overtime_rate: parseFloat(formData.overtime_rate),
       };
 
+      let response;
       if (editingWorkplace) {
         response = await api.put(`/api/workplaces/${editingWorkplace.id}`, submitData);
         showToast("Cập nhật chỗ làm thành công!", "success");
@@ -82,14 +161,14 @@ function WorkplaceRegister() {
 
       if (response.data.success) {
         resetForm();
-        fetchWorkplaces();
+        fetchWorkplaces(true);
       }
     } catch (error) {
       showToast(error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại", "error");
     }
   };
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setShowForm(false);
     setEditingWorkplace(null);
     setFormData({
@@ -101,9 +180,9 @@ function WorkplaceRegister() {
       break_minutes: "30",
       overtime_rate: "1.5",
     });
-  };
+  }, []);
 
-  const handleEdit = (workplace) => {
+  const handleEdit = useCallback((workplace) => {
     setEditingWorkplace(workplace);
     setFormData({
       name: workplace.name,
@@ -115,30 +194,48 @@ function WorkplaceRegister() {
       overtime_rate: workplace.overtime_rate?.toString() || "1.5",
     });
     setShowForm(true);
-  };
+  }, []);
+
+  const handleAddNew = useCallback(() => {
+    resetForm();
+    setShowForm(true);
+  }, [resetForm]);
+
+  // Memoized values
+  const hasWorkplaces = useMemo(() => workplaces.length > 0, [workplaces]);
+
+  if (loading && !refreshing) {
+    return (
+      <div className="workplace-page">
+        <div className="workplace-header">
+          <h1 className="title">🏢 Chỗ làm</h1>
+          <button className="btn-add" onClick={handleAddNew}>+ Thêm chỗ làm</button>
+        </div>
+        <LoadingSkeleton />
+      </div>
+    );
+  }
 
   return (
     <div className="workplace-page">
-      {toast.show && (
-        <div className={`toast-notification ${toast.type}`}>
-          {toast.message}
-        </div>
-      )}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
+      
+      {refreshing && <div className="refreshing-overlay">🔄 Đang cập nhật...</div>}
 
       <div className="workplace-header">
         <h1 className="title">🏢 Chỗ làm</h1>
-        <button className="btn-add" onClick={() => setShowForm(true)}>
+        <button className="btn-add" onClick={handleAddNew}>
           + Thêm chỗ làm
         </button>
       </div>
 
       {showForm && (
-        <div className="modal-overlay">
-          <form className="modal-box" onSubmit={handleSubmit}>
+        <div className="modal-overlay" onClick={resetForm}>
+          <form className="modal-box" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
             <h2>{editingWorkplace ? "✏️ Sửa chỗ làm" : "➕ Thêm chỗ làm mới"}</h2>
 
             <div className="form-group">
-              <label>Tên chỗ làm <span style={{ color: "red" }}>*</span></label>
+              <label>Tên chỗ làm <span className="required">*</span></label>
               <input
                 type="text"
                 placeholder="VD: Công ty ABC, Quán cà phê XYZ"
@@ -149,7 +246,7 @@ function WorkplaceRegister() {
             </div>
 
             <div className="form-group">
-              <label>Địa chỉ <span style={{ color: "red" }}>*</span></label>
+              <label>Địa chỉ <span className="required">*</span></label>
               <input
                 type="text"
                 placeholder="VD: Biên Hòa, Đồng Nai"
@@ -161,7 +258,7 @@ function WorkplaceRegister() {
 
             <div className="form-row">
               <div className="form-group">
-                <label>Lương theo giờ (VNĐ) <span style={{ color: "red" }}>*</span></label>
+                <label>Lương theo giờ (VNĐ) <span className="required">*</span></label>
                 <input
                   type="number"
                   placeholder="25000"
@@ -225,38 +322,12 @@ function WorkplaceRegister() {
       )}
 
       <div className="workplace-grid">
-        {loading ? (
-          <div className="loading">⏳ Đang tải danh sách chỗ làm...</div>
-        ) : workplaces.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">🏢</div>
-            <p>Chưa có chỗ làm nào</p>
-            <button className="btn-empty" onClick={() => setShowForm(true)}>+ Thêm chỗ làm ngay</button>
-          </div>
-        ) : (
+        {hasWorkplaces ? (
           workplaces.map((workplace) => (
-            <div key={workplace.id} className="workplace-card">
-              <div className="workplace-name">{workplace.name}</div>
-              <div className="workplace-address">📍 {workplace.address}</div>
-              <div className="workplace-stats">
-                <div className="stat-item">
-                  <span className="stat-label">💰 Lương</span>
-                  <span className="stat-value">{parseFloat(workplace.hourly_rate).toLocaleString()}đ/h</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">⚡ Tăng ca</span>
-                  <span className="stat-value">{workplace.overtime_rate || 1.5}x</span>
-                </div>
-                {workplace.has_break && (
-                  <div className="stat-item">
-                    <span className="stat-label">🍜 Nghỉ</span>
-                    <span className="stat-value">{workplace.break_minutes} phút</span>
-                  </div>
-                )}
-              </div>
-              <button className="btn-edit" onClick={() => handleEdit(workplace)}>✏️ Sửa</button>
-            </div>
+            <WorkplaceCard key={workplace.id} workplace={workplace} onEdit={handleEdit} />
           ))
+        ) : (
+          <EmptyState onAdd={handleAddNew} />
         )}
       </div>
     </div>
