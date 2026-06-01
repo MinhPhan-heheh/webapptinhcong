@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from "react";
-import axios from "axios";
 import api from "../services/api";
 import "../styles/Attendance.css";
 
@@ -62,10 +61,8 @@ function Attendance() {
       const token = localStorage.getItem("token");
       if (!token) return;
 
-      const response = await api.get(
-        "/api/workplaces/shifts/my",
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      // ĐÃ SỬA: bỏ headers thủ công
+      const response = await api.get("/api/workplaces/shifts/my");
       
       if (response.data.success) {
         setShifts(response.data.shifts || []);

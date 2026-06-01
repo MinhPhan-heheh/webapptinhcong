@@ -28,11 +28,8 @@ function WorkplaceRegister() {
   const fetchWorkplaces = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
-      const response = await api.get("/api/work-places/my");
+      // ĐÃ SỬA: work-places -> workplaces
+      const response = await api.get("/api/workplaces/my");
 
       if (response.data.success) {
         setWorkplaces(response.data.workplaces || []);
@@ -63,7 +60,6 @@ function WorkplaceRegister() {
     }
 
     try {
-      const token = localStorage.getItem("token");
       let response;
 
       const submitData = {
@@ -77,12 +73,12 @@ function WorkplaceRegister() {
       };
 
       if (editingWorkplace) {
-        // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
-        response = await api.put(`/api/work-places/${editingWorkplace.id}`, submitData);
+        // ĐÃ SỬA: work-places -> workplaces
+        response = await api.put(`/api/workplaces/${editingWorkplace.id}`, submitData);
         showToast("Cập nhật thành công!", "success");
       } else {
-        // ĐÃ SỬA: dùng api instance, thêm prefix /api, sửa thành work-places
-        response = await api.post("/api/work-places/register", submitData);
+        // ĐÃ SỬA: work-places -> workplaces
+        response = await api.post("/api/workplaces/register", submitData);
         showToast("Đăng ký thành công!", "success");
       }
 
@@ -139,7 +135,6 @@ function WorkplaceRegister() {
         </button>
       </div>
 
-      {/* Form đăng ký */}
       {showForm && (
         <div className="modal-overlay">
           <form className="modal-box" onSubmit={handleSubmit}>
@@ -232,7 +227,6 @@ function WorkplaceRegister() {
         </div>
       )}
 
-      {/* Danh sách chỗ làm - dạng grid ngang */}
       <div className="workplace-grid">
         {loading ? (
           <div className="loading">Đang tải...</div>
