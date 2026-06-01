@@ -1054,3 +1054,133 @@
     color: #64748b;
   }
 }
+
+/* Typography polish for attendance */
+.attendance-page {
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.attendance-page .title {
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.attendance-page .subtitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.attendance-page .view-btn,
+.attendance-page .control-btn,
+.attendance-page .refresh-btn {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.attendance-page .day-name,
+.attendance-page .month-weekday {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.attendance-page .day-number {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.attendance-page .month-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.attendance-page .shift-time {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.attendance-page .shift-location {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.attendance-page .holiday-badge,
+.attendance-page .shift-count,
+.attendance-page .day-shift-item,
+.attendance-page .more-shifts {
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.attendance-page .empty-box,
+.attendance-page .empty-data {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.attendance-page .detail-date {
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.attendance-page .detail-workplace {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.attendance-page .detail-time,
+.attendance-page .detail-holiday,
+.attendance-page .detail-address {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .attendance-page {
+    font-size: 13px;
+  }
+
+  .attendance-page .title {
+    font-size: 19px;
+  }
+
+  .attendance-page .subtitle,
+  .attendance-page .shift-location {
+    font-size: 12px;
+  }
+
+  .attendance-page .view-btn,
+  .attendance-page .control-btn,
+  .attendance-page .refresh-btn {
+    font-size: 13px;
+  }
+
+  .attendance-page .day-number {
+    font-size: 24px;
+  }
+
+  .attendance-page .shift-time {
+    font-size: 13px;
+  }
+
+  .attendance-page .detail-workplace {
+    font-size: 16px;
+  }
+}

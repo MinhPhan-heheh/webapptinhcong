@@ -731,3 +731,138 @@
 .shift-page .save-btn {
   background: #16a34a;
 }
+
+/* Typography polish for shift management */
+.shift-page {
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.shift-page .title {
+  font-size: clamp(20px, 2vw, 28px);
+  font-weight: 800;
+  line-height: 1.18;
+  letter-spacing: 0;
+}
+
+.shift-page .subtitle {
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.shift-page .filter-select,
+.shift-page .month-select,
+.shift-page .week-info,
+.shift-page .control-btn,
+.shift-page .add-btn,
+.shift-page .cancel-btn,
+.shift-page .save-btn {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.shift-page .day-name {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.shift-page .day-number {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.shift-page .month-name {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.shift-page .shift-time {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.shift-page .shift-location {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.shift-page .holiday-badge,
+.shift-page .shift-count {
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.shift-page .empty-box {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.shift-page .modal-box h2 {
+  color: #172033;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.shift-page .form-group label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.shift-page .form-group input,
+.shift-page .form-group select {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+@media (max-width: 640px) {
+  .shift-page {
+    font-size: 13px;
+  }
+
+  .shift-page .title {
+    font-size: 19px;
+  }
+
+  .shift-page .subtitle,
+  .shift-page .shift-location {
+    font-size: 12px;
+  }
+
+  .shift-page .filter-select,
+  .shift-page .month-select,
+  .shift-page .week-info,
+  .shift-page .control-btn,
+  .shift-page .add-btn {
+    font-size: 13px;
+  }
+
+  .shift-page .day-number {
+    font-size: 24px;
+  }
+
+  .shift-page .shift-time {
+    font-size: 13px;
+  }
+
+  .shift-page .modal-box h2 {
+    font-size: 18px;
+  }
+}
