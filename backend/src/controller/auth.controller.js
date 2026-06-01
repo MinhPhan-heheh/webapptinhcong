@@ -1,35 +1,40 @@
 const pool = require("../db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
+const axios = require("axios");
 
-// ================= SEND EMAIL WITH BREVO SMTP =================
+// ================= SEND EMAIL WITH BREVO HTTP API =================
 const sendEmail = async (to, subject, html) => {
   try {
-    console.log("📧 Sending email via Brevo SMTP to:", to);
+    console.log("📧 Sending email via Brevo HTTP API to:", to);
+    console.log("📧 BREVO_API_KEY exists:", !!process.env.BREVO_API_KEY);
     
-    const transporter = nodemailer.createTransport({
-      host: "smtp-relay.brevo.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.BREVO_API_KEY,
+    const response = await axios.post(
+      "https://api.brevo.com/v3/smtp/email",
+      {
+        to: [{ email: to }],
+        sender: {
+          name: "WorkShift",
+          email: process.env.EMAIL_USER || "phanbaominh1092005@gmail.com",
+        },
+        subject: subject,
+        htmlContent: html,
       },
-    });
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": process.env.BREVO_API_KEY,
+        },
+        timeout: 30000,
+      }
+    );
 
-    const info = await transporter.sendMail({
-      from: `"WorkShift" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    
-    console.log("✅ Email sent successfully:", info.messageId);
+    console.log("✅ Email sent successfully via Brevo HTTP!");
+    console.log("📧 Response:", response.data);
     return true;
   } catch (error) {
-    console.error("❌ Brevo SMTP error:", error);
-    throw new Error("Không thể gửi email");
+    console.error("❌ Brevo HTTP error:", error.response?.data || error.message);
+    throw new Error("Không thể gửi email: " + (error.response?.data?.message || error.message));
   }
 };
 
@@ -93,6 +98,13 @@ const login = async (req, res) => {
   try {
     console.log("📥 LOGIN - Body:", req.body);
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email và mật khẩu là bắt buộc",
+      });
+    }
 
     const result = await pool.query(
       `SELECT * FROM users WHERE email = $1`,
