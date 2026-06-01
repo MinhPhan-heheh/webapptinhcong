@@ -1,46 +1,30 @@
 const pool = require("../db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const nodemailer = require("nodemailer");
+const brevo = require('@getbrevo/brevo');
 
-// ================= SEND EMAIL WITH GMAIL =================
+// ================= SEND EMAIL WITH BREVO =================
 const sendEmail = async (to, subject, html) => {
   try {
-    console.log("📧 [1] Starting send email to:", to);
-    console.log("📧 [2] EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("📧 [3] EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+    console.log("📧 Sending email via Brevo to:", to);
     
-    // Kiểm tra cấu hình
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      throw new Error("Thiếu cấu hình email: EMAIL_USER hoặc EMAIL_PASS");
-    }
-    
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    let apiInstance = new brevo.TransactionalEmailsApi();
+    apiInstance.setApiKey(brevo.ApiKeyHeader.API_KEY, process.env.BREVO_API_KEY);
 
-    // Verify connection
-    await transporter.verify();
-    console.log("📧 [4] SMTP connection verified");
+    let sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.htmlContent = html;
+    sendSmtpEmail.sender = { 
+      name: "WorkShift", 
+      email: process.env.EMAIL_USER
+    };
+    sendSmtpEmail.to = [{ email: to }];
 
-    const info = await transporter.sendMail({
-      from: `"WorkShift" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-    
-    console.log("✅ [5] Email sent successfully:", info.messageId);
-    return true;
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log("✅ Email sent successfully");
   } catch (error) {
-    console.error("❌ Email error - Code:", error.code);
-    console.error("❌ Email error - Message:", error.message);
-    console.error("❌ Email error - Response:", error.response);
-    throw new Error(`Không thể gửi email: ${error.message}`);
+    console.error("❌ Brevo error:", error);
+    throw new Error("Không thể gửi email");
   }
 };
 
@@ -220,25 +204,12 @@ const verifyToken = async (req, res) => {
 // ================= FORGOT PASSWORD =================
 const forgotPassword = async (req, res) => {
   console.log("=== FORGOT PASSWORD FUNCTION CALLED ===");
-  console.log("1. Request method:", req.method);
-  console.log("2. Request headers content-type:", req.headers["content-type"]);
-  console.log("3. Request body:", req.body);
-  console.log("4. Request body type:", typeof req.body);
+  console.log("Request body:", req.body);
   
   try {
-    // Kiểm tra nếu body rỗng
-    if (!req.body || Object.keys(req.body).length === 0) {
-      console.error("❌ Request body is empty!");
-      return res.status(400).json({
-        success: false,
-        message: "Request body is empty. Vui lòng gửi dữ liệu JSON hợp lệ.",
-      });
-    }
-
     const { email } = req.body;
 
     if (!email) {
-      console.error("❌ Email is missing from request body!");
       return res.status(400).json({
         success: false,
         message: "Email là bắt buộc",
@@ -247,33 +218,28 @@ const forgotPassword = async (req, res) => {
 
     console.log("📧 Processing forgot password for email:", email);
 
-    // Kiểm tra email trong database
     const result = await pool.query(
       `SELECT * FROM users WHERE email = $1`,
       [email]
     );
 
     if (result.rows.length === 0) {
-      console.log("❌ Email not found in database:", email);
       return res.status(404).json({
         success: false,
         message: "Email không tồn tại trong hệ thống",
       });
     }
 
-    // Tạo OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
-    console.log("🔐 Generated OTP:", otp, "expires at:", expires);
+    console.log("🔐 Generated OTP:", otp);
 
-    // Lưu OTP vào database
     await pool.query(
       `UPDATE users SET otp = $1, otp_expired_at = $2 WHERE email = $3`,
       [otp, expires, email]
     );
 
-    // Tạo nội dung email
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #333; text-align: center;">🔐 Khôi phục mật khẩu</h2>
@@ -291,10 +257,7 @@ const forgotPassword = async (req, res) => {
       </div>
     `;
 
-    // Gửi email
     await sendEmail(email, "OTP Reset Password - WorkShift", html);
-
-    console.log("✅ Forgot password completed successfully for:", email);
 
     res.json({
       success: true,
@@ -302,7 +265,6 @@ const forgotPassword = async (req, res) => {
     });
   } catch (error) {
     console.error("❌ FORGOT PASSWORD Error:", error);
-    console.error("❌ Error stack:", error.stack);
     res.status(500).json({
       success: false,
       message: error.message || "Lỗi server khi xử lý yêu cầu",
