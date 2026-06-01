@@ -9,7 +9,7 @@ import React, {
   startTransition,
 } from "react";
 
-import api from "../services/api";
+import api, { isRequestCanceled } from "../services/api";
 import "../styles/Salary.css";
 
 // Constants
@@ -112,20 +112,25 @@ const WorkplaceCard = memo(({ item }) => (
   </div>
 ));
 
-const BarChartItem = memo(({ item, total, color }) => {
-  const percent = total > 0 ? (item.total_salary / total) * 100 : 0;
+const SalaryPieChart = memo(({ data, total }) => {
+  let current = 0;
+  const segments = data.map((item, idx) => {
+    const percent = total > 0 ? (Number(item.total_salary || 0) / total) * 100 : 0;
+    const start = current;
+    current += percent;
+    return `${COLORS[idx % COLORS.length]} ${start}% ${current}%`;
+  });
+
   return (
-    <div className="bar-chart-item">
-      <div className="bar-chart-label">
-        <span className="bar-chart-name">{item.workplace_name}</span>
-        <span className="bar-chart-value">{formatCurrency(item.total_salary)}</span>
-      </div>
-      <div className="bar-chart-bar-wrapper">
-        <div 
-          className="bar-chart-bar"
-          style={{ width: `${percent}%`, backgroundColor: color }}
-        >
-          <span className="bar-chart-percent">{percent.toFixed(1)}%</span>
+    <div className="salary-pie-wrap">
+      <div
+        className="salary-pie"
+        style={{ background: `conic-gradient(${segments.join(", ")})` }}
+        aria-label="Biểu đồ tròn phân bổ lương"
+      >
+        <div className="salary-pie-center">
+          <span>Tổng lương</span>
+          <strong>{formatCurrency(total)}</strong>
         </div>
       </div>
     </div>
@@ -248,7 +253,6 @@ function Salary() {
     const cacheData = cacheManager.get("workplaces");
     if (cacheData) {
       setAllWorkplaces(cacheData);
-      return;
     }
     
     try {
@@ -281,7 +285,6 @@ function Salary() {
         setSalaryData(cachedSalary);
         setWorkplaceSalaryData(cachedWorkplace);
         setLoading(false);
-        return;
       }
     }
     
@@ -292,7 +295,7 @@ function Salary() {
       startTransition(() => {
         if (isRefresh) {
           setRefreshing(true);
-        } else {
+        } else if (!salaryData) {
           setLoading(true);
         }
       });
@@ -316,7 +319,7 @@ function Salary() {
         cacheManager.set(`workplace_salary_${cacheKey}`, details);
       }
     } catch (error) {
-      if (error.name !== "AbortError") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi load data:", error);
         if (error.response?.status !== 401) {
           showToast("Không thể tải dữ liệu lương", "error");
@@ -331,12 +334,12 @@ function Salary() {
         }
       });
     }
-  }, [selectedYear, selectedMonth, cacheKey, showToast]);
+  }, [selectedYear, selectedMonth, cacheKey, salaryData, showToast]);
 
   // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
     // Force refresh khi component mount (bỏ qua cache)
-    loadData(true);
+    loadData(false);
     fetchWorkplaces();
     
     // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
@@ -597,16 +600,7 @@ function Salary() {
           
           {chartData.length > 0 ? (
             <div className="chart-wrapper">
-              <div className="bar-chart">
-                {chartData.map((item, idx) => (
-                  <BarChartItem 
-                    key={idx} 
-                    item={item} 
-                    total={chartTotal}
-                    color={COLORS[idx % COLORS.length]}
-                  />
-                ))}
-              </div>
+              <SalaryPieChart data={chartData} total={chartTotal} />
 
               <div className="pie-legend">
                 {chartData.map((item, idx) => {

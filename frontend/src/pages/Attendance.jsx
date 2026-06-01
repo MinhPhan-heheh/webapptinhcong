@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef } from "react";
-import api from "../services/api";
+import api, { isRequestCanceled } from "../services/api";
 import "../styles/Attendance.css";
 
 // Constants
@@ -203,7 +203,7 @@ function Attendance() {
         setShifts(response.data.shifts || []);
       }
     } catch (error) {
-      if (error.name !== "AbortError") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi fetch shifts:", error);
         if (error.response?.status !== 401) {
           showToast("Không thể tải lịch làm việc", "error");
@@ -221,7 +221,7 @@ function Attendance() {
   // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
     // Force refresh khi component mount
-    fetchShifts(true);
+    fetchShifts(false);
     
     // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
     const handleRefresh = (event) => {

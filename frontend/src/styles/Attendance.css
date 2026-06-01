@@ -715,3 +715,141 @@
     border: 1px solid #ddd;
   }
 }
+
+/* Bright usability pass */
+.attendance-page {
+  background: #f7f9fc;
+  color: #172033;
+}
+
+.attendance-page .top-bar,
+.attendance-page .controls-bar,
+.attendance-page .month-grid,
+.attendance-page .shift-detail-panel,
+.attendance-page .day-card {
+  border: 1px solid #e5eaf3;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.attendance-page .top-bar {
+  align-items: flex-start;
+}
+
+.attendance-page .title,
+.attendance-page .month-header h2,
+.attendance-page .detail-date,
+.attendance-page .day-number {
+  color: #172033;
+}
+
+.attendance-page .subtitle,
+.attendance-page .month-weekday,
+.attendance-page .day-name,
+.attendance-page .month-name {
+  color: #64748b;
+}
+
+.attendance-page .view-toggle {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.attendance-page .view-btn {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  min-height: 38px;
+}
+
+.attendance-page .view-btn.active {
+  background: #2563eb;
+  box-shadow: 0 6px 14px rgba(37, 99, 235, 0.22);
+}
+
+.attendance-page .control-btn,
+.attendance-page .refresh-btn {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+}
+
+.attendance-page .control-btn:hover,
+.attendance-page .refresh-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.attendance-page .today-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+}
+
+.attendance-page .day-card.has-shifts {
+  background: #ffffff;
+  border-left: 4px solid #16a34a;
+}
+
+.attendance-page .day-card.today-card {
+  background: #eff6ff;
+  color: #172033;
+  border-color: #93c5fd;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.12);
+}
+
+.attendance-page .day-card.today-card .day-name,
+.attendance-page .day-card.today-card .day-number,
+.attendance-page .day-card.today-card .month-name {
+  color: #1d4ed8;
+}
+
+.attendance-page .shift-card,
+.attendance-page .day-shift-item {
+  background: #f8fafc;
+  border-color: #2563eb;
+}
+
+.attendance-page .shift-card:hover,
+.attendance-page .day-shift-item:hover {
+  background: #eff6ff;
+}
+
+.attendance-page .empty-box,
+.attendance-page .empty-data {
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 1px dashed #dbe3ef;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .attendance-page,
+  .attendance-page .top-bar,
+  .attendance-page .controls-bar,
+  .attendance-page .day-card,
+  .attendance-page .month-grid,
+  .attendance-page .shift-detail-panel,
+  .attendance-page .shift-card {
+    background: #f7f9fc;
+  }
+
+  .attendance-page .title,
+  .attendance-page .month-header h2,
+  .attendance-page .detail-date,
+  .attendance-page .day-number {
+    color: #172033;
+  }
+
+  .attendance-page .subtitle,
+  .attendance-page .month-weekday,
+  .attendance-page .empty-box {
+    color: #64748b;
+  }
+}

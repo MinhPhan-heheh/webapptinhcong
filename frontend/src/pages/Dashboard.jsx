@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api"; // ✅ SỬA: import api và triggerRefresh
+import api, { isRequestCanceled } from "../services/api"; // ✅ SỬA: import api và triggerRefresh
 import "../styles/Dashboard.css";
 
 // Constants
@@ -138,7 +138,7 @@ function Dashboard() {
         }
       }
     } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi fetch dashboard:", error);
         if (error.response?.status === 401) {
           showToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
@@ -165,7 +165,7 @@ function Dashboard() {
   useEffect(() => {
     // Force refresh khi component mount (bỏ qua cache)
     const loadData = async () => {
-      await fetchDashboard(true);
+      await fetchDashboard(false);
     };
     loadData();
     

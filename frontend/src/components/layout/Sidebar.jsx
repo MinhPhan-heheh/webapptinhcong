@@ -75,9 +75,10 @@ function Sidebar({ isOpen, isMobile, onToggle }) {
               title={!isOpen ? item.name : ""}
               style={({ isActive }) => ({
                 ...styles.menuItem,
-                backgroundColor: isActive ? "#3b82f6" : "transparent",
+                backgroundColor: isActive ? "rgba(59,130,246,0.18)" : "transparent",
+                color: isActive ? "#ffffff" : "#cbd5e1",
                 justifyContent: isOpen ? "flex-start" : "center",
-                borderLeft: isActive ? "3px solid #fff" : "3px solid transparent",
+                borderLeft: isActive ? "3px solid #60a5fa" : "3px solid transparent",
               })}
               onClick={isMobile ? onToggle : undefined}
             >
@@ -100,14 +101,14 @@ function Sidebar({ isOpen, isMobile, onToggle }) {
 
 const styles = {
   sidebar: {
-    background: "linear-gradient(180deg, #1e293b, #0f172a)",
-    color: "white",
+    background: "linear-gradient(180deg, #1e293b, #111827)",
+    color: "#e5e7eb",
     height: "100vh",
     position: "fixed",
     left: 0,
     top: 0,
     zIndex: 100,
-    boxShadow: "2px 0 20px rgba(0,0,0,0.2)",
+    boxShadow: "1px 0 0 rgba(15,23,42,0.18)",
     transition: "0.3s",
     display: "flex",
     flexDirection: "column",
@@ -126,9 +127,9 @@ const styles = {
     width: "100%",
   },
   closeBtn: {
-    background: "rgba(255,255,255,0.1)",
-    border: "none",
-    color: "white",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    color: "#e5e7eb",
     cursor: "pointer",
     padding: "8px",
     borderRadius: "8px",
@@ -142,9 +143,9 @@ const styles = {
     top: "15px",
     left: "15px",
     zIndex: 101,
-    background: "#3b82f6",
-    border: "none",
-    color: "white",
+    background: "#ffffff",
+    border: "1px solid #dbeafe",
+    color: "#2563eb",
     cursor: "pointer",
     padding: "12px",
     borderRadius: "12px",
@@ -152,7 +153,7 @@ const styles = {
     alignItems: "center",
     justifyContent: "center",
     fontSize: "18px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+    boxShadow: "0 8px 20px rgba(37,99,235,0.16)",
     transition: "0.2s",
   },
   overlay: {
@@ -174,7 +175,7 @@ const styles = {
     alignItems: "center",
     gap: "14px",
     padding: "14px",
-    color: "white",
+    color: "#cbd5e1",
     textDecoration: "none",
     borderRadius: "12px",
     marginBottom: "10px",
@@ -194,9 +195,9 @@ const styles = {
   logoutBtn: {
     width: "100%",
     padding: "12px",
-    background: "rgba(255,255,255,0.1)",
-    color: "white",
-    border: "none",
+    background: "rgba(239,68,68,0.12)",
+    color: "#fecaca",
+    border: "1px solid rgba(248,113,113,0.24)",
     borderRadius: "12px",
     cursor: "pointer",
     display: "flex",

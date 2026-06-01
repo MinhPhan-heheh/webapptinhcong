@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
-import api from "../services/api";
+import api, { isRequestCanceled, triggerRefresh } from "../services/api";
+
 import "../styles/Profile.css";
 
 // Constants
@@ -281,7 +282,7 @@ function Profile() {
         }
       }
     } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi fetch profile:", error.response?.data || error.message);
         if (error.response?.status === 401) {
           showToast("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
@@ -306,7 +307,7 @@ function Profile() {
   // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
     // Force refresh khi component mount
-    fetchProfile(true);
+    fetchProfile(false);
     
     // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
     const handleRefresh = (event) => {

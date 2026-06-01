@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef, startTransition } from "react";
-import api from "../services/api";
+import api, { isRequestCanceled } from "../services/api";
 import "../styles/WorkplaceRegister.css";
 
 // Constants
@@ -140,7 +140,6 @@ function WorkplaceRegister() {
         startTransition(() => {
           setWorkplaces(cachedWorkplaces);
         });
-        return;
       }
     }
 
@@ -151,7 +150,7 @@ function WorkplaceRegister() {
       startTransition(() => {
         if (isRefresh) {
           setRefreshing(true);
-        } else {
+        } else if (!workplaces.length) {
           setLoading(true);
         }
       });
@@ -171,7 +170,7 @@ function WorkplaceRegister() {
         cacheManager.set("workplaces", workplaceData);
       }
     } catch (error) {
-      if (error.name !== "AbortError") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi fetch workplaces:", error);
         if (error.response?.status !== 401) {
           showToast("Không thể tải danh sách chỗ làm", "error");
@@ -186,12 +185,12 @@ function WorkplaceRegister() {
         }
       });
     }
-  }, [showToast]);
+  }, [workplaces.length, showToast]);
 
   // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
     // Force refresh khi component mount
-    fetchWorkplaces(true);
+    fetchWorkplaces(false);
     
     // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
     const handleRefresh = (event) => {

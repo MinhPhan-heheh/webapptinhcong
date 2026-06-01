@@ -431,3 +431,124 @@
     max-height: 280px;
   }
 }
+
+/* Bright usability pass */
+.shift-page {
+  background: #f7f9fc;
+  color: #172033;
+}
+
+.shift-page .top-bar,
+.shift-page .controls-bar,
+.shift-page .day-card,
+.shift-page .modal-box {
+  border: 1px solid #e5eaf3;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+}
+
+.shift-page .title,
+.shift-page .day-number {
+  color: #172033;
+}
+
+.shift-page .subtitle,
+.shift-page .day-name,
+.shift-page .month-name,
+.shift-page .shift-location {
+  color: #64748b;
+}
+
+.shift-page .filter-select,
+.shift-page .month-select,
+.shift-page .form-group input,
+.shift-page .form-group select {
+  background: #ffffff;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  color: #172033;
+  min-height: 44px;
+}
+
+.shift-page .filter-select:focus,
+.shift-page .month-select:focus,
+.shift-page .form-group input:focus,
+.shift-page .form-group select:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.shift-page .control-btn,
+.shift-page .week-info {
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+}
+
+.shift-page .control-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.shift-page .today-btn,
+.shift-page .add-btn,
+.shift-page .fab {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+}
+
+.shift-page .today-card {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.shift-page .shift-card {
+  background: #f8fafc;
+  border-left-color: #2563eb;
+  border-radius: 10px;
+}
+
+.shift-page .shift-card:hover {
+  background: #eff6ff;
+}
+
+.shift-page .shift-card.holiday {
+  background: #fff7ed;
+  border-left-color: #f97316;
+}
+
+.shift-page .edit-btn {
+  background: #ecfdf5;
+  color: #15803d;
+}
+
+.shift-page .delete-btn {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.shift-page .empty-box {
+  color: #94a3b8;
+  background: #f8fafc;
+  border: 1px dashed #dbe3ef;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.shift-page .modal-overlay {
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(2px);
+}
+
+.shift-page .cancel-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.shift-page .save-btn {
+  background: #16a34a;
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef, startTransition } from "react";
-import api from "../services/api";
+import api, { isRequestCanceled } from "../services/api";
 import "../styles/Shift.css";
 
 // Constants
@@ -203,7 +203,7 @@ function Shift() {
         cacheManager.set("workplaces", workplaceData);
       }
     } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi fetch workplaces:", error);
         if (error.response?.status !== 401) {
           showToast("Không thể tải danh sách chỗ làm", "error");
@@ -226,7 +226,6 @@ function Shift() {
         startTransition(() => {
           setShifts(cachedShifts);
         });
-        return;
       }
     }
 
@@ -237,7 +236,7 @@ function Shift() {
       startTransition(() => {
         if (isRefresh) {
           setRefreshing(true);
-        } else {
+        } else if (!shifts.length) {
           setLoading(true);
         }
       });
@@ -266,7 +265,7 @@ function Shift() {
         });
       }
     } catch (error) {
-      if (error.name !== "AbortError") {
+      if (!isRequestCanceled(error)) {
         console.error("Lỗi fetch shifts:", error);
         if (error.response?.status !== 401) {
           startTransition(() => {
@@ -284,13 +283,13 @@ function Shift() {
         }
       });
     }
-  }, [selectedWorkplace, cacheKey, showToast]);
+  }, [selectedWorkplace, cacheKey, shifts.length, showToast]);
 
   // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
     const loadData = async () => {
       // Force refresh khi component mount (bỏ qua cache)
-      await Promise.all([fetchShifts(true), fetchWorkplaces()]);
+      await Promise.all([fetchShifts(false), fetchWorkplaces()]);
     };
     loadData();
 

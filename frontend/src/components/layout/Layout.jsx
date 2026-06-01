@@ -59,22 +59,25 @@ const styles = {
   content: {
     flex: 1,
     transition: "0.3s",
-    backgroundColor: "#f5f7fa",
+    backgroundColor: "#f7f9fc",
   },
   header: {
     backgroundColor: "white",
-    padding: "12px 20px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+    padding: "10px 18px",
+    boxShadow: "0 1px 0 rgba(15,23,42,0.08)",
     display: "flex",
     alignItems: "center",
     gap: "16px",
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
   },
   toggleBtn: {
-    background: "none",
-    border: "none",
+    background: "#eff6ff",
+    border: "1px solid #dbeafe",
     fontSize: "20px",
     cursor: "pointer",
-    color: "#333",
+    color: "#2563eb",
     padding: "8px",
     borderRadius: "8px",
     display: "flex",
@@ -87,7 +90,7 @@ const styles = {
     color: "#333",
   },
   main: {
-    padding: "20px",
+    padding: "18px",
   },
 };
 
