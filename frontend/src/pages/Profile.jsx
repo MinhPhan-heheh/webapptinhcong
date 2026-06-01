@@ -30,8 +30,6 @@ function Profile() {
     type: "",
   });
 
-  const BASE_URL = "https://workshift-o5sm.onrender.com";
-
   const showToast = useCallback((message, type = "success") => {
     setToast({
       show: true,
@@ -53,8 +51,8 @@ function Profile() {
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
-
-      const response = await api.get("/profile");
+      // ĐÃ SỬA: thêm /api và dấu / ở cuối
+      const response = await api.get("/api/profile/");
 
       if (response.data.success) {
         setUser(response.data.user);
@@ -88,10 +86,8 @@ function Profile() {
     e.preventDefault();
 
     try {
-      const response = await api.put(
-        "/profile",
-        formData
-      );
+      // ĐÃ SỬA: thêm /api và dấu / ở cuối
+      const response = await api.put("/api/profile/", formData);
 
       if (response.data.success) {
         setUser(response.data.user);
@@ -126,13 +122,11 @@ function Profile() {
     }
 
     try {
-      const response = await api.put(
-        "/profile/password",
-        {
-          current_password: passwordData.current_password,
-          new_password: passwordData.new_password,
-        }
-      );
+      // ĐÃ SỬA: thêm /api
+      const response = await api.put("/api/profile/password", {
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+      });
 
       if (response.data.success) {
         setChangingPassword(false);
@@ -185,24 +179,19 @@ function Profile() {
 
     setUploading(true);
 
-    const formData = new FormData();
-
-    formData.append("avatar", selectedFile);
+    const formDataUpload = new FormData();
+    formDataUpload.append("avatar", selectedFile);
 
     try {
-      const response = await api.post(
-        "/profile/avatar",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      // ĐÃ SỬA: thêm /api
+      const response = await api.post("/api/profile/avatar", formDataUpload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       if (response.data.success) {
         setUser(response.data.user);
-
         setSelectedFile(null);
         setPreviewUrl(null);
         setAvatarError(false);
@@ -230,9 +219,8 @@ function Profile() {
 
   const handleRemoveAvatar = async () => {
     try {
-      const response = await api.delete(
-        "/profile/avatar"
-      );
+      // ĐÃ SỬA: thêm /api
+      const response = await api.delete("/api/profile/avatar");
 
       if (response.data.success) {
         setUser(response.data.user);
@@ -253,20 +241,15 @@ function Profile() {
   const getAvatarUrl = () => {
     if (previewUrl) return previewUrl;
 
-    if (user?.avatar) {
+    if (user?.avatar && !avatarError) {
       let avatarPath = user.avatar;
-
-      if (avatarPath.startsWith("/uploads")) {
-        return `${BASE_URL}${avatarPath}`;
+      // Nếu avatar đã có URL đầy đủ thì dùng luôn
+      if (avatarPath.startsWith("http")) {
+        return avatarPath;
       }
-
-      if (!avatarPath.startsWith("http")) {
-        return `${BASE_URL}/uploads/avatars/${avatarPath}`;
-      }
-
-      return avatarPath;
+      // Nếu là đường dẫn tương đối, thêm base URL
+      return `https://workshift-o5sm.onrender.com${avatarPath}`;
     }
-
     return null;
   };
 
@@ -274,7 +257,6 @@ function Profile() {
 
   const getInitials = () => {
     const name = user?.full_name || "User";
-
     return name
       .split(" ")
       .map((n) => n[0])
@@ -329,7 +311,6 @@ function Profile() {
               title="Chọn ảnh đại diện"
             >
               📷
-
               <input
                 type="file"
                 accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
@@ -389,7 +370,6 @@ function Profile() {
             >
               <div className="form-group">
                 <label>Họ và tên</label>
-
                 <input
                   type="text"
                   value={formData.full_name}
@@ -406,7 +386,6 @@ function Profile() {
 
               <div className="form-group">
                 <label>Số điện thoại</label>
-
                 <input
                   type="tel"
                   value={formData.phone}
@@ -422,7 +401,6 @@ function Profile() {
 
               <div className="form-group">
                 <label>Email</label>
-
                 <input
                   type="email"
                   value={user?.email || ""}
@@ -439,7 +417,6 @@ function Profile() {
                 >
                   Hủy
                 </button>
-
                 <button
                   type="submit"
                   className="save-btn"
@@ -454,10 +431,8 @@ function Profile() {
                 <span className="detail-label">
                   👤 Họ và tên
                 </span>
-
                 <span className="detail-value">
-                  {user?.full_name ||
-                    "Chưa cập nhật"}
+                  {user?.full_name || "Chưa cập nhật"}
                 </span>
               </div>
 
@@ -465,7 +440,6 @@ function Profile() {
                 <span className="detail-label">
                   📧 Email
                 </span>
-
                 <span className="detail-value">
                   {user?.email}
                 </span>
@@ -475,10 +449,8 @@ function Profile() {
                 <span className="detail-label">
                   📞 Số điện thoại
                 </span>
-
                 <span className="detail-value">
-                  {user?.phone ||
-                    "Chưa cập nhật"}
+                  {user?.phone || "Chưa cập nhật"}
                 </span>
               </div>
 
@@ -486,7 +458,6 @@ function Profile() {
                 <span className="detail-label">
                   ✅ Trạng thái
                 </span>
-
                 <span
                   className={`verify-status ${
                     user?.is_verified
@@ -504,7 +475,6 @@ function Profile() {
                 <span className="detail-label">
                   📅 Ngày tham gia
                 </span>
-
                 <span className="detail-value">
                   {user?.created_at
                     ? new Date(
@@ -544,7 +514,6 @@ function Profile() {
                 <label>
                   Mật khẩu hiện tại
                 </label>
-
                 <input
                   type="password"
                   value={
@@ -564,7 +533,6 @@ function Profile() {
 
               <div className="form-group">
                 <label>Mật khẩu mới</label>
-
                 <input
                   type="password"
                   value={
@@ -586,7 +554,6 @@ function Profile() {
                 <label>
                   Xác nhận mật khẩu mới
                 </label>
-
                 <input
                   type="password"
                   value={
@@ -614,7 +581,6 @@ function Profile() {
                 >
                   Hủy
                 </button>
-
                 <button
                   type="submit"
                   className="save-btn"
