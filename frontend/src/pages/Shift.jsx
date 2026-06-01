@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef, startTransition } from "react";
-import api, { triggerRefresh } from "../services/api";
+import api from "../services/api";
 import "../styles/Shift.css";
 
 // Constants
