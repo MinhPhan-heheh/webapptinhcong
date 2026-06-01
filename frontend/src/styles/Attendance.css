@@ -643,6 +643,207 @@
   }
 }
 
+@media (max-width: 640px) {
+  .attendance-page {
+    padding: 10px;
+  }
+
+  .attendance-page .top-bar {
+    display: grid;
+    grid-template-columns: 1fr;
+    padding: 12px;
+    margin-bottom: 10px;
+    gap: 10px;
+  }
+
+  .attendance-page .title {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .attendance-page .subtitle {
+    font-size: 12px;
+  }
+
+  .attendance-page .view-toggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+
+  .attendance-page .view-btn {
+    min-height: 40px;
+    padding: 8px;
+    white-space: nowrap;
+  }
+
+  .attendance-page .controls-bar {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .attendance-page .nav-controls {
+    display: grid;
+    grid-template-columns: 44px 1fr 44px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .attendance-page .control-btn {
+    padding: 8px;
+    min-width: 44px;
+    min-height: 42px;
+  }
+
+  .attendance-page .today-btn {
+    min-width: 0;
+  }
+
+  .attendance-page .refresh-btn {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 8px;
+  }
+
+  .attendance-page .week-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .attendance-page .day-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .attendance-page .card-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    text-align: left;
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .attendance-page .day-name {
+    font-size: 12px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 5px 8px;
+    border-radius: 999px;
+  }
+
+  .attendance-page .day-number {
+    font-size: 22px;
+    margin: 0;
+  }
+
+  .attendance-page .month-name {
+    font-size: 11px;
+    text-align: right;
+  }
+
+  .attendance-page .shift-count {
+    top: -10px;
+    right: -8px;
+  }
+
+  .attendance-page .shifts-list {
+    max-height: none;
+  }
+
+  .attendance-page .shift-card {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .attendance-page .shift-time {
+    font-size: 13px;
+  }
+
+  .attendance-page .shift-location {
+    font-size: 12px;
+  }
+
+  .attendance-page .empty-box {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .attendance-page .month-grid {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .attendance-page .month-header h2 {
+    font-size: 17px;
+  }
+
+  .attendance-page .month-weekday {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+
+  .attendance-page .month-days {
+    gap: 4px;
+  }
+
+  .attendance-page .month-day {
+    min-height: 58px;
+    padding: 6px;
+    border-radius: 10px;
+  }
+
+  .attendance-page .month-day .day-number {
+    font-size: 12px;
+    margin-bottom: 4px;
+  }
+
+  .attendance-page .day-shifts {
+    gap: 3px;
+  }
+
+  .attendance-page .day-shift-item {
+    font-size: 9px;
+    padding: 3px 5px;
+    max-width: 100%;
+  }
+
+  .attendance-page .more-shifts {
+    font-size: 9px;
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  .attendance-page .shift-detail-panel {
+    margin-top: 10px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .attendance-page .close-detail {
+    top: 10px;
+    right: 10px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+  }
+
+  .attendance-page .detail-content {
+    padding-right: 18px;
+  }
+
+  .attendance-page .detail-date {
+    font-size: 14px;
+    margin-bottom: 10px;
+  }
+
+  .attendance-page .detail-workplace {
+    font-size: 16px;
+  }
+}
+
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
   .attendance-page {

@@ -432,6 +432,185 @@
   }
 }
 
+@media (max-width: 640px) {
+  .shift-page {
+    padding: 10px;
+  }
+
+  .shift-page .top-bar {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .shift-page .title {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .shift-page .subtitle {
+    font-size: 12px;
+  }
+
+  .filter-select {
+    margin-bottom: 10px;
+    min-height: 44px;
+  }
+
+  .controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .month-controls,
+  .week-controls {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .month-controls .today-btn {
+    grid-column: 1 / -1;
+  }
+
+  .month-select,
+  .week-info {
+    width: 100%;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .control-btn {
+    padding: 8px;
+    min-width: 44px;
+    min-height: 42px;
+  }
+
+  .week-grid {
+    gap: 10px;
+  }
+
+  .day-card {
+    padding: 12px;
+    border-radius: 12px;
+    min-height: auto;
+  }
+
+  .card-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    text-align: left;
+    gap: 10px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+  }
+
+  .day-name {
+    font-size: 12px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 5px 8px;
+    border-radius: 999px;
+  }
+
+  .day-number {
+    font-size: 22px;
+    margin: 0;
+  }
+
+  .month-name {
+    font-size: 11px;
+    text-align: right;
+  }
+
+  .shift-count {
+    top: -10px;
+    right: -8px;
+  }
+
+  .shifts-list {
+    max-height: none;
+    margin-bottom: 8px;
+  }
+
+  .shift-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  .shift-actions {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    align-self: center;
+    margin-bottom: 0;
+  }
+
+  .shift-time,
+  .shift-location,
+  .holiday-badge {
+    grid-column: 1;
+  }
+
+  .empty-box {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .add-btn {
+    min-height: 42px;
+    padding: 10px;
+  }
+
+  .fab {
+    right: 14px;
+    bottom: 14px;
+    width: 52px;
+    height: 52px;
+    font-size: 26px;
+  }
+
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  .modal-box {
+    max-width: none;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    border-radius: 16px;
+    padding: 16px;
+  }
+
+  .modal-box h2 {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .form-group input,
+  .form-group select {
+    min-height: 44px;
+  }
+
+  .modal-buttons {
+    position: sticky;
+    bottom: -16px;
+    background: #ffffff;
+    padding-top: 10px;
+    margin-top: 12px;
+  }
+}
+
 /* Bright usability pass */
 .shift-page {
   background: #f7f9fc;
