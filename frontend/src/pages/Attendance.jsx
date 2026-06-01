@@ -2,6 +2,35 @@ import React, { useEffect, useState, useCallback, useMemo, memo, useRef } from "
 import api, { isRequestCanceled } from "../services/api";
 import "../styles/Attendance.css";
 
+const ATTENDANCE_CACHE_KEY = "attendance_shifts_cache";
+const ATTENDANCE_CACHE_DURATION = 5 * 60 * 1000;
+
+const getCachedAttendanceShifts = () => {
+  try {
+    const cached = localStorage.getItem(ATTENDANCE_CACHE_KEY);
+    if (!cached) return null;
+
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < ATTENDANCE_CACHE_DURATION) {
+      return data;
+    }
+  } catch (error) {
+    console.error("Attendance cache read error:", error);
+  }
+  return null;
+};
+
+const setCachedAttendanceShifts = (data) => {
+  try {
+    localStorage.setItem(
+      ATTENDANCE_CACHE_KEY,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
+  } catch (error) {
+    console.error("Attendance cache write error:", error);
+  }
+};
+
 // Constants
 const WEEK_NAMES = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 const MONTH_NAMES = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
@@ -178,6 +207,14 @@ function Attendance() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+
+    if (!isRefresh) {
+      const cachedShifts = getCachedAttendanceShifts();
+      if (cachedShifts) {
+        setShifts(cachedShifts);
+        setLoading(false);
+      }
+    }
     
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -185,7 +222,7 @@ function Attendance() {
     try {
       if (isRefresh) {
         setRefreshing(true);
-      } else {
+      } else if (!shifts.length) {
         setLoading(true);
       }
       
@@ -200,7 +237,9 @@ function Attendance() {
       });
       
       if (response.data.success) {
-        setShifts(response.data.shifts || []);
+        const nextShifts = response.data.shifts || [];
+        setShifts(nextShifts);
+        setCachedAttendanceShifts(nextShifts);
       }
     } catch (error) {
       if (!isRequestCanceled(error)) {
@@ -216,7 +255,7 @@ function Attendance() {
         setLoading(false);
       }
     }
-  }, [showToast]);
+  }, [shifts.length, showToast]);
 
   // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {

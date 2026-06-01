@@ -5,6 +5,34 @@ import "../styles/Dashboard.css";
 
 // Constants
 const REFRESH_INTERVAL = 30000; // 30 seconds
+const DASHBOARD_CACHE_KEY = "dashboard_cache";
+const DASHBOARD_CACHE_DURATION = 5 * 60 * 1000;
+
+const getCachedDashboard = () => {
+  try {
+    const cached = localStorage.getItem(DASHBOARD_CACHE_KEY);
+    if (!cached) return null;
+
+    const { data, timestamp } = JSON.parse(cached);
+    if (Date.now() - timestamp < DASHBOARD_CACHE_DURATION) {
+      return data;
+    }
+  } catch (error) {
+    console.error("Dashboard cache read error:", error);
+  }
+  return null;
+};
+
+const setCachedDashboard = (data) => {
+  try {
+    localStorage.setItem(
+      DASHBOARD_CACHE_KEY,
+      JSON.stringify({ data, timestamp: Date.now() })
+    );
+  } catch (error) {
+    console.error("Dashboard cache write error:", error);
+  }
+};
 
 // Stat Card Component - memoized
 const StatCard = memo(({ icon, label, value, onClick }) => (
@@ -119,9 +147,17 @@ function Dashboard() {
     const controller = new AbortController();
     
     try {
+      if (!isRefresh) {
+        const cachedDashboard = getCachedDashboard();
+        if (cachedDashboard) {
+          setDashboardData(cachedDashboard);
+          setLoading(false);
+        }
+      }
+
       if (isRefresh) {
         setRefreshing(true);
-      } else {
+      } else if (!dashboardData) {
         setLoading(true);
       }
       
@@ -131,6 +167,7 @@ function Dashboard() {
       
       if (response.data.success) {
         setDashboardData(response.data.data);
+        setCachedDashboard(response.data.data);
         
         // Update user in localStorage with fresh avatar
         if (response.data.data?.user) {
@@ -159,7 +196,7 @@ function Dashboard() {
     }
     
     return () => controller.abort();
-  }, [navigate, showToast, updateUserInStorage]);
+  }, [dashboardData, navigate, showToast, updateUserInStorage]);
 
   // ✅ THÊM MỚI: Force refresh khi component mount và lắng nghe sự kiện refresh
   useEffect(() => {
