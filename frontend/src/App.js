@@ -1,5 +1,4 @@
 import "./App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HashRouter } from 'react-router-dom';  // Thêm dòng này
 
 // Auth pages
