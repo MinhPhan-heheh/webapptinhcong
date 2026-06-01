@@ -294,37 +294,39 @@
   font-size: 16px;
 }
 
-/* Toast */
+/* ================= TOAST NOTIFICATION ================= */
 .toast-notification {
   position: fixed;
   top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 20px;
-  border-radius: 10px;
-  color: white;
-  font-size: 14px;
-  z-index: 10000;
-  animation: slideDown 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  white-space: nowrap;
+  right: 20px;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 9999;
+  animation: slideInRight 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  color: #ffffff !important;
+  font-family: inherit;
 }
 
 .toast-notification.success {
-  background: #28a745;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-left: 4px solid #ffffff;
 }
 
 .toast-notification.error {
-  background: #dc3545;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-left: 4px solid #ffffff;
 }
 
-@keyframes slideDown {
+@keyframes slideInRight {
   from {
-    top: -50px;
+    transform: translateX(100%);
     opacity: 0;
   }
   to {
-    top: 20px;
+    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -401,11 +403,15 @@
   .save-avatar-btn {
     margin-left: 0;
   }
-  
+
+  /* Toast responsive */
   .toast-notification {
-    white-space: normal;
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
     text-align: center;
-    max-width: 90%;
   }
 }
 
@@ -459,6 +465,16 @@
   
   .verify-status {
     font-size: 11px;
+  }
+
+  /* Toast responsive */
+  .toast-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    padding: 12px 18px;
+    font-size: 13px;
+    text-align: center;
   }
 }
 

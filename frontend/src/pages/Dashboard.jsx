@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../services/api";
 import "../styles/Dashboard.css";
@@ -8,33 +8,108 @@ function Dashboard() {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState({ show: false, message: "", type: "" });
+  const [userAvatar, setUserAvatar] = useState(null);
 
   const showToast = (message, type = "error") => {
     setToast({ show: true, message, type });
     setTimeout(() => setToast({ show: false, message: "", type: "" }), 3000);
   };
 
+  // Hàm lấy avatar từ localStorage hoặc API
+  const getAvatarFromStorage = useCallback(() => {
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.avatar) {
+          return user.avatar;
+        }
+      }
+    } catch (e) {
+      console.error("Lỗi đọc user từ localStorage:", e);
+    }
+    return null;
+  }, []);
+
+  // Hàm lấy URL ảnh đại diện
+  const getAvatarUrl = useCallback(() => {
+    // Ưu tiên avatar từ dashboardData (mới nhất)
+    let avatar = dashboardData?.user?.avatar;
+    
+    // Nếu không có, lấy từ localStorage
+    if (!avatar) {
+      avatar = getAvatarFromStorage();
+    }
+    
+    if (avatar) {
+      if (avatar.startsWith("http")) {
+        return avatar;
+      }
+      if (avatar.startsWith("/uploads")) {
+        return `https://workshift-o5sm.onrender.com${avatar}`;
+      }
+      return avatar;
+    }
+    return null;
+  }, [dashboardData?.user?.avatar, getAvatarFromStorage]);
+
+  // Lắng nghe sự kiện thay đổi avatar từ Profile
   useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const response = await api.get("/api/dashboard/");
-        
-        if (response.data.success) {
-          setDashboardData(response.data.data);
-        }
-      } catch (error) {
-        console.error("Lỗi fetch dashboard:", error);
-        if (error.response?.status === 401) {
-          showToast("❌ Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
-        } else {
-          showToast("❌ Không thể tải dữ liệu dashboard", "error");
-        }
-      } finally {
-        setLoading(false);
+    const handleStorageChange = (e) => {
+      if (e.key === "user") {
+        const newAvatar = getAvatarFromStorage();
+        setUserAvatar(newAvatar);
+        // Cập nhật lại dashboard để lấy avatar mới
+        fetchDashboard();
       }
     };
 
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [getAvatarFromStorage]);
+
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/dashboard/");
+      
+      if (response.data.success) {
+        setDashboardData(response.data.data);
+        
+        // Cập nhật user trong localStorage với avatar mới từ API
+        if (response.data.data?.user) {
+          const currentUserStr = localStorage.getItem("user");
+          if (currentUserStr) {
+            const currentUser = JSON.parse(currentUserStr);
+            const updatedUser = {
+              ...currentUser,
+              avatar: response.data.data.user.avatar || currentUser.avatar
+            };
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi fetch dashboard:", error);
+      if (error.response?.status === 401) {
+        showToast("❌ Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", "error");
+      } else {
+        showToast("❌ Không thể tải dữ liệu dashboard", "error");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboard();
+    
+    // Set interval để cập nhật dashboard mỗi 30 giây (tùy chọn)
+    const interval = setInterval(() => {
+      fetchDashboard();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Hàm điều hướng
@@ -56,21 +131,6 @@ function Dashboard() {
 
   const goToProfile = () => {
     navigate("/profile");
-  };
-
-  // Hàm lấy URL ảnh đại diện
-  const getAvatarUrl = () => {
-    const avatar = dashboardData?.user?.avatar;
-    if (avatar) {
-      if (avatar.startsWith("http")) {
-        return avatar;
-      }
-      if (avatar.startsWith("/uploads")) {
-        return `https://workshift-o5sm.onrender.com${avatar}`;
-      }
-      return avatar;
-    }
-    return null;
   };
 
   if (loading) {
@@ -98,16 +158,61 @@ function Dashboard() {
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'flex';
+                  // Xóa avatar khỏi localStorage nếu ảnh lỗi
+                  const userStr = localStorage.getItem("user");
+                  if (userStr) {
+                    const user = JSON.parse(userStr);
+                    if (user.avatar) {
+                      user.avatar = null;
+                      localStorage.setItem("user", JSON.stringify(user));
+                    }
+                  }
                 }}
               />
             ) : null}
             <div className="avatar-placeholder" style={{ display: getAvatarUrl() ? 'none' : 'flex' }}>
-              {dashboardData?.user?.full_name?.charAt(0) || "U"}
+              {dashboardData?.user?.full_name?.charAt(0) || 
+               (() => {
+                 const userStr = localStorage.getItem("user");
+                 if (userStr) {
+                   try {
+                     const user = JSON.parse(userStr);
+                     return user.full_name?.charAt(0) || "U";
+                   } catch (e) {
+                     return "U";
+                   }
+                 }
+                 return "U";
+               })()}
             </div>
           </div>
           <div className="user-details">
-            <h2>Xin chào, {dashboardData?.user?.full_name || "User"}!</h2>
-            <p>{dashboardData?.user?.email}</p>
+            <h2>Xin chào, {dashboardData?.user?.full_name || 
+              (() => {
+                const userStr = localStorage.getItem("user");
+                if (userStr) {
+                  try {
+                    const user = JSON.parse(userStr);
+                    return user.full_name || "User";
+                  } catch (e) {
+                    return "User";
+                  }
+                }
+                return "User";
+              })()}!</h2>
+            <p>{dashboardData?.user?.email || 
+              (() => {
+                const userStr = localStorage.getItem("user");
+                if (userStr) {
+                  try {
+                    const user = JSON.parse(userStr);
+                    return user.email || "";
+                  } catch (e) {
+                    return "";
+                  }
+                }
+                return "";
+              })()}</p>
           </div>
         </div>
       </div>
