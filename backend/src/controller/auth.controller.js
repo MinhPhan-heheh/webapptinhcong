@@ -1,29 +1,34 @@
 const pool = require("../db");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const brevo = require('@getbrevo/brevo');
+const nodemailer = require("nodemailer");
 
-// ================= SEND EMAIL WITH BREVO =================
+// ================= SEND EMAIL WITH BREVO SMTP =================
 const sendEmail = async (to, subject, html) => {
   try {
-    console.log("📧 Sending email via Brevo to:", to);
+    console.log("📧 Sending email via Brevo SMTP to:", to);
     
-    let apiInstance = new brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(brevo.ApiKeyHeader.API_KEY, process.env.BREVO_API_KEY);
+    const transporter = nodemailer.createTransport({
+      host: "smtp-relay.brevo.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.BREVO_API_KEY,
+      },
+    });
 
-    let sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.subject = subject;
-    sendSmtpEmail.htmlContent = html;
-    sendSmtpEmail.sender = { 
-      name: "WorkShift", 
-      email: process.env.EMAIL_USER
-    };
-    sendSmtpEmail.to = [{ email: to }];
-
-    await apiInstance.sendTransacEmail(sendSmtpEmail);
-    console.log("✅ Email sent successfully");
+    const info = await transporter.sendMail({
+      from: `"WorkShift" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    
+    console.log("✅ Email sent successfully:", info.messageId);
+    return true;
   } catch (error) {
-    console.error("❌ Brevo error:", error);
+    console.error("❌ Brevo SMTP error:", error);
     throw new Error("Không thể gửi email");
   }
 };
