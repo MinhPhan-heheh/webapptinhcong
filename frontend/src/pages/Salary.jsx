@@ -9,7 +9,7 @@ import React, {
   startTransition,
 } from "react";
 
-import api from "../services/api";
+import api, { triggerRefresh } from "../services/api";
 import "../styles/Salary.css";
 
 // Constants
@@ -333,17 +333,31 @@ function Salary() {
     }
   }, [selectedYear, selectedMonth, cacheKey, showToast]);
 
-  // Initial load and cleanup
+  // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
-    loadData();
+    // Force refresh khi component mount (bỏ qua cache)
+    loadData(true);
     fetchWorkplaces();
+    
+    // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
+    const handleRefresh = (event) => {
+      const { dataType } = event.detail || {};
+      if (dataType === "all" || dataType === "salary") {
+        cacheManager.clear();
+        loadData(true);
+        fetchWorkplaces();
+      }
+    };
+    
+    window.addEventListener("app-refresh", handleRefresh);
     
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      window.removeEventListener("app-refresh", handleRefresh);
     };
-  }, [loadData, fetchWorkplaces]);
+  }, []); // Chạy 1 lần khi mount
 
   // Auto refresh every 5 minutes
   useEffect(() => {

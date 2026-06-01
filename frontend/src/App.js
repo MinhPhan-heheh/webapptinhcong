@@ -1,5 +1,6 @@
 import "./App.css";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { initRefreshOnRouteChange } from "./services/api";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -19,6 +20,9 @@ import Layout from "./components/layout/Layout";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 function App() {
+   useEffect(() => {
+    initRefreshOnRouteChange();
+  }, []);
   return (
     <HashRouter>  {/* ĐỔI BrowserRouter THÀNH HashRouter */}
       <Routes>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo, useRef, startTransition } from "react";
-import api from "../services/api";
+import api, { triggerRefresh } from "../services/api";
 import "../styles/WorkplaceRegister.css";
 
 // Constants
@@ -188,16 +188,29 @@ function WorkplaceRegister() {
     }
   }, [showToast]);
 
-  // Initial load
+  // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
-    fetchWorkplaces();
+    // Force refresh khi component mount
+    fetchWorkplaces(true);
+    
+    // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
+    const handleRefresh = (event) => {
+      const { dataType } = event.detail || {};
+      if (dataType === "all" || dataType === "workplaces") {
+        cacheManager.clear();
+        fetchWorkplaces(true);
+      }
+    };
+    
+    window.addEventListener("app-refresh", handleRefresh);
     
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      window.removeEventListener("app-refresh", handleRefresh);
     };
-  }, [fetchWorkplaces]);
+  }, []); // Chạy 1 lần khi mount
 
   // Auto refresh every 30 seconds
   useEffect(() => {

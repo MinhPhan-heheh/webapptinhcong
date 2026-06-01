@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../services/api";
+import api, { triggerRefresh } from "../services/api"; // ✅ SỬA: import api và triggerRefresh
 import "../styles/Dashboard.css";
 
 // Constants
@@ -161,10 +161,28 @@ function Dashboard() {
     return () => controller.abort();
   }, [navigate, showToast, updateUserInStorage]);
 
-  // Initial load
+  // ✅ THÊM MỚI: Force refresh khi component mount và lắng nghe sự kiện refresh
   useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
+    // Force refresh khi component mount (bỏ qua cache)
+    const loadData = async () => {
+      await fetchDashboard(true);
+    };
+    loadData();
+    
+    // Lắng nghe sự kiện refresh từ các component khác hoặc từ App
+    const handleRefresh = (event) => {
+      const { dataType } = event.detail || {};
+      if (dataType === "all" || dataType === "dashboard") {
+        fetchDashboard(true);
+      }
+    };
+    
+    window.addEventListener("app-refresh", handleRefresh);
+    
+    return () => {
+      window.removeEventListener("app-refresh", handleRefresh);
+    };
+  }, []); // ✅ Chạy 1 lần khi mount
 
   // Auto refresh interval
   useEffect(() => {

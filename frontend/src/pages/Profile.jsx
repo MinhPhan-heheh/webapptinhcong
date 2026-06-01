@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
-import api from "../services/api";
+import api, { triggerRefresh } from "../services/api";
 import "../styles/Profile.css";
 
 // Constants
@@ -303,9 +303,25 @@ function Profile() {
     return () => controller.abort();
   }, [showToast]);
 
+  // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    // Force refresh khi component mount
+    fetchProfile(true);
+    
+    // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
+    const handleRefresh = (event) => {
+      const { dataType } = event.detail || {};
+      if (dataType === "all" || dataType === "profile") {
+        fetchProfile(true);
+      }
+    };
+    
+    window.addEventListener("app-refresh", handleRefresh);
+    
+    return () => {
+      window.removeEventListener("app-refresh", handleRefresh);
+    };
+  }, []); // Chạy 1 lần khi mount
 
   // Handle form input change
   const handleFormChange = useCallback((e) => {
@@ -332,6 +348,7 @@ function Profile() {
         
         // Refresh dashboard data
         window.dispatchEvent(new Event("storage"));
+        triggerRefresh("profile");
       }
     } catch (error) {
       showToast(error.response?.data?.message || "Lỗi cập nhật", "error");
@@ -366,6 +383,7 @@ function Profile() {
           confirm_password: "",
         });
         showToast("Đổi mật khẩu thành công!", "success");
+        triggerRefresh("profile");
       }
     } catch (error) {
       showToast(error.response?.data?.message || "Lỗi đổi mật khẩu", "error");
@@ -426,6 +444,7 @@ function Profile() {
         // Refresh profile and dashboard
         fetchProfile(true);
         window.dispatchEvent(new Event("storage"));
+        triggerRefresh("profile");
       }
     } catch (error) {
       console.error("Upload error:", error.response?.data || error.message);
@@ -447,6 +466,7 @@ function Profile() {
         // Refresh profile and dashboard
         fetchProfile(true);
         window.dispatchEvent(new Event("storage"));
+        triggerRefresh("profile");
       }
     } catch (error) {
       showToast(error.response?.data?.message || "Lỗi xóa ảnh", "error");

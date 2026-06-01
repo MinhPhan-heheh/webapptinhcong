@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef } from "react";
-import api from "../services/api";
+import api, { triggerRefresh } from "../services/api";
 import "../styles/Attendance.css";
 
 // Constants
@@ -218,15 +218,28 @@ function Attendance() {
     }
   }, [showToast]);
 
-  // Initial load
+  // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
-    fetchShifts();
+    // Force refresh khi component mount
+    fetchShifts(true);
+    
+    // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
+    const handleRefresh = (event) => {
+      const { dataType } = event.detail || {};
+      if (dataType === "all" || dataType === "attendance") {
+        fetchShifts(true);
+      }
+    };
+    
+    window.addEventListener("app-refresh", handleRefresh);
+    
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      window.removeEventListener("app-refresh", handleRefresh);
     };
-  }, [fetchShifts]);
+  }, []); // Chạy 1 lần khi mount
 
   // Get week dates - memoized
   const weekDays = useMemo(() => {
@@ -290,7 +303,6 @@ function Attendance() {
   }, []);
 
   const todayStr = useMemo(() => getTodayStr(), []);
-  const todayDate = useMemo(() => new Date(), []);
 
   // Pre-compute week view data
   const weekViewData = useMemo(() => {

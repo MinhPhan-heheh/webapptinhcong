@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo, memo, useRef, startTransition } from "react";
-import api from "../services/api";
+import api, { triggerRefresh } from "../services/api";
 import "../styles/Shift.css";
 
 // Constants
@@ -286,19 +286,33 @@ function Shift() {
     }
   }, [selectedWorkplace, cacheKey, showToast]);
 
-  // Initial load
+  // ==================== INITIAL LOAD & REFRESH LISTENER ====================
   useEffect(() => {
     const loadData = async () => {
-      await Promise.all([fetchShifts(), fetchWorkplaces()]);
+      // Force refresh khi component mount (bỏ qua cache)
+      await Promise.all([fetchShifts(true), fetchWorkplaces()]);
     };
     loadData();
+
+    // Lắng nghe sự kiện refresh từ App (khi chuyển trang)
+    const handleRefresh = (event) => {
+      const { dataType } = event.detail || {};
+      if (dataType === "all" || dataType === "shifts") {
+        cacheManager.clear();
+        fetchShifts(true);
+        fetchWorkplaces();
+      }
+    };
+    
+    window.addEventListener("app-refresh", handleRefresh);
 
     return () => {
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
+      window.removeEventListener("app-refresh", handleRefresh);
     };
-  }, [fetchShifts, fetchWorkplaces]);
+  }, []); // Chạy 1 lần khi mount
 
   // Auto refresh every 30 seconds
   useEffect(() => {
