@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
-import api, { triggerRefresh } from "../services/api";
+import api from "../services/api";
 import "../styles/Profile.css";
 
 // Constants

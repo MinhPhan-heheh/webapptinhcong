@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import api, { triggerRefresh } from "../services/api"; // ✅ SỬA: import api và triggerRefresh
+import api from "../services/api"; // ✅ SỬA: import api và triggerRefresh
 import "../styles/Dashboard.css";
 
 // Constants
