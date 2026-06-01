@@ -8,6 +8,8 @@ import {
   FaCalendarAlt,
   FaBriefcase,
   FaMoneyBillWave,
+  FaBars,
+  FaTimes,
 } from "react-icons/fa";
 
 const menuItems = [
@@ -19,7 +21,7 @@ const menuItems = [
   { path: "/profile", name: "Hồ sơ", icon: <FaUser /> },
 ];
 
-function Sidebar({ isOpen, isMobile }) {
+function Sidebar({ isOpen, isMobile, onToggle }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -31,45 +33,62 @@ function Sidebar({ isOpen, isMobile }) {
   };
 
   return (
-    <div
-      style={{
-        ...styles.sidebar,
-        width: isOpen ? "260px" : "70px",
-        transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
-      }}
-    >
-      <div style={styles.logo}>
-        <h2 style={{ fontSize: isOpen ? "22px" : "18px" }}>
-          {isOpen ? "WORKSHIFT" : "WS"}
-        </h2>
-      </div>
-
-      <div style={styles.menu}>
-        {menuItems.map((item) => (
-          <NavLink
-            key={item.path}
-            to={item.path}
-            title={!isOpen ? item.name : ""}
-            style={({ isActive }) => ({
-              ...styles.menuItem,
-              backgroundColor: isActive ? "#3b82f6" : "transparent",
-              justifyContent: isOpen ? "flex-start" : "center",
-              borderLeft: isActive ? "3px solid #fff" : "3px solid transparent",
-            })}
-          >
-            <span style={styles.icon}>{item.icon}</span>
-            {isOpen && <span>{item.name}</span>}
-          </NavLink>
-        ))}
-      </div>
-
-      <div style={styles.logout}>
-        <button style={styles.logoutBtn} onClick={handleLogout}>
-          <FaSignOutAlt />
-          {isOpen && "Đăng xuất"}
+    <>
+      {/* Nút toggle menu bên ngoài - hiển thị khi menu đóng */}
+      {!isOpen && (
+        <button onClick={onToggle} style={styles.toggleBtnOuter}>
+          <FaBars />
         </button>
+      )}
+
+      <div
+        style={{
+          ...styles.sidebar,
+          width: isOpen ? "260px" : "70px",
+          transform: isMobile && !isOpen ? "translateX(-100%)" : "translateX(0)",
+        }}
+      >
+        <div style={styles.logo}>
+          <div style={styles.logoContent}>
+            <h2 style={{ fontSize: isOpen ? "22px" : "18px", margin: 0 }}>
+              {isOpen ? "WORKSHIFT" : "WS"}
+            </h2>
+            {/* Nút đóng bên trong sidebar */}
+            {isOpen && (
+              <button onClick={onToggle} style={styles.closeBtn}>
+                <FaTimes />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.menu}>
+          {menuItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              title={!isOpen ? item.name : ""}
+              style={({ isActive }) => ({
+                ...styles.menuItem,
+                backgroundColor: isActive ? "#3b82f6" : "transparent",
+                justifyContent: isOpen ? "flex-start" : "center",
+                borderLeft: isActive ? "3px solid #fff" : "3px solid transparent",
+              })}
+            >
+              <span style={styles.icon}>{item.icon}</span>
+              {isOpen && <span>{item.name}</span>}
+            </NavLink>
+          ))}
+        </div>
+
+        <div style={styles.logout}>
+          <button style={styles.logoutBtn} onClick={handleLogout}>
+            <FaSignOutAlt />
+            {isOpen && "Đăng xuất"}
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -93,6 +112,42 @@ const styles = {
     borderBottom: "1px solid rgba(255,255,255,0.1)",
     textAlign: "center",
     fontWeight: "700",
+  },
+  logoContent: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  closeBtn: {
+    background: "rgba(255,255,255,0.1)",
+    border: "none",
+    color: "white",
+    cursor: "pointer",
+    padding: "8px",
+    borderRadius: "8px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "0.2s",
+  },
+  toggleBtnOuter: {
+    position: "fixed",
+    top: "15px",
+    left: "15px",
+    zIndex: 101,
+    background: "#3b82f6",
+    border: "none",
+    color: "white",
+    cursor: "pointer",
+    padding: "12px",
+    borderRadius: "12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "18px",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.2)",
+    transition: "0.2s",
   },
   menu: {
     flex: 1,
@@ -135,9 +190,6 @@ const styles = {
     fontSize: "14px",
     fontWeight: "600",
     transition: "0.2s",
-  },
-  logoutBtnHover: {
-    background: "rgba(255,255,255,0.2)",
   },
 };
 
