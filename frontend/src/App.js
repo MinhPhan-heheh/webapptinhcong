@@ -1,5 +1,5 @@
 import "./App.css";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";  // Sửa dòng này
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 
 // Auth pages
 import Login from "./pages/auth/Login";
@@ -20,7 +20,7 @@ import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>  {/* ĐỔI BrowserRouter THÀNH HashRouter */}
       <Routes>
         {/* AUTH */}
         <Route path="/" element={<Login />} />
@@ -42,7 +42,7 @@ function App() {
         {/* fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
