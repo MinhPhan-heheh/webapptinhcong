@@ -91,13 +91,13 @@ const Toast = memo(({ show, message, type }) => {
 
 const SalaryTableRow = memo(({ item }) => (
   <tr className={item.holiday_type === "holiday" ? "holiday-row" : ""}>
-    <td>{formatDate(item.shift_date)}</td>
-    <td>{item.workplace_name}</td>
-    <td>{item.start_time} - {item.end_time}</td>
-    <td>{item.work_hours}h</td>
-    <td>{formatCurrency(item.base_salary)}/h</td>
-    <td>{item.holiday_rate === 1 ? "" : `x${item.holiday_rate}`}</td>
-    <td className="salary-amount">{formatCurrency(item.shift_salary)}</td>
+    <td data-label="Ngày">{formatDate(item.shift_date)}</td>
+    <td data-label="Chỗ làm">{item.workplace_name}</td>
+    <td data-label="Ca làm">{item.start_time} - {item.end_time}</td>
+    <td data-label="Giờ">{item.work_hours}h</td>
+    <td data-label="Đơn giá">{formatCurrency(item.base_salary)}/h</td>
+    <td data-label="Hệ số">{item.holiday_rate === 1 ? "x1" : `x${item.holiday_rate}`}</td>
+    <td data-label="Thành tiền" className="salary-amount">{formatCurrency(item.shift_salary)}</td>
   </tr>
 ));
 

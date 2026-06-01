@@ -126,6 +126,10 @@
   background: white;
   border-radius: 16px;
   padding: 16px;
+  overflow: hidden;
+}
+
+.table-wrapper {
   overflow-x: auto;
 }
 
@@ -449,5 +453,92 @@
   .chart-wrapper {
     grid-template-columns: minmax(280px, 360px) 1fr;
     align-items: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .salary-page {
+    padding: 10px;
+  }
+
+  .salary-table-container {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .table-title {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+
+  .table-wrapper {
+    overflow: visible;
+  }
+
+  .salary-table,
+  .salary-table tbody,
+  .salary-table tr,
+  .salary-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .salary-table thead {
+    display: none;
+  }
+
+  .salary-table tr {
+    margin-bottom: 12px;
+    padding: 12px;
+    border: 1px solid #e5eaf3;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+  }
+
+  .salary-table tr.holiday-row {
+    background: #fff7ed;
+    border-color: #fed7aa;
+  }
+
+  .salary-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .salary-table td:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .salary-table td::before {
+    content: attr(data-label);
+    color: #64748b;
+    font-weight: 700;
+    text-align: left;
+    flex: 0 0 38%;
+  }
+
+  .salary-table .salary-amount {
+    font-size: 16px;
+  }
+
+  .summary-card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .summary-icon {
+    font-size: 28px;
+  }
+
+  .summary-value {
+    font-size: 18px;
   }
 }
