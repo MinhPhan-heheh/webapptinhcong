@@ -403,25 +403,165 @@
   color: #28a745;
 }
 
-/* Chart Styles */
-.chart-salary {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-}
-
+/* ================= CHART STYLES ================= */
 .chart-container {
-  max-width: 800px;
-  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-.chart-title {
-  font-size: 20px;
+.chart-title-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chart-title-section h3 {
+  margin: 0;
+  font-size: 18px;
   font-weight: 600;
   color: #2c3e50;
-  text-align: center;
-  margin-bottom: 30px;
+}
+
+.chart-reset-btn {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.chart-reset-btn:hover {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Bar Chart */
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bar-chart-item {
+  width: 100%;
+}
+
+.bar-chart-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.bar-chart-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.bar-chart-value {
+  font-weight: 600;
+  color: #28a745;
+}
+
+.bar-chart-bar-wrapper {
+  width: 100%;
+  background: #e9ecef;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 32px;
+}
+
+.bar-chart-bar {
+  height: 100%;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 10px;
+  transition: width 0.5s ease;
+  min-width: 40px;
+}
+
+.bar-chart-percent {
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: 0 0 2px rgba(0,0,0,0.3);
+}
+
+/* Pie Legend */
+.pie-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #e9ecef;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.2s;
+  flex: 1;
+  min-width: 200px;
+}
+
+.legend-item:hover {
+  transform: translateX(5px);
+  background: #e9ecef;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.legend-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.legend-name {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 13px;
+}
+
+.legend-value {
+  font-weight: 600;
+  color: #28a745;
+  font-size: 13px;
+}
+
+.legend-percent {
+  font-size: 12px;
+  color: #666;
 }
 
 /* Total Salary Banner */
@@ -438,67 +578,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* Pie Chart */
-.pie-chart-multi {
-  display: flex;
-  gap: 40px;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  margin: 30px 0;
-}
-
-.pie-legend {
-  flex: 1;
-  min-width: 200px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px;
-  margin-bottom: 10px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.legend-item:hover {
-  transform: translateX(5px);
-  background: #e9ecef;
-}
-
-.legend-color {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-}
-
-.legend-info {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.legend-name {
-  font-weight: 600;
-  color: #2c3e50;
-}
-
-.legend-value {
-  font-weight: 600;
-  color: #28a745;
-}
-
-.legend-percent {
-  font-size: 12px;
-  color: #666;
 }
 
 /* Content Transition */
@@ -571,10 +650,19 @@
     justify-content: space-between;
   }
 
-  .pie-chart-multi {
-    flex-direction: column;
+  /* Chart responsive */
+  .bar-chart-bar {
+    min-width: 30px;
   }
-
+  
+  .bar-chart-percent {
+    font-size: 10px;
+  }
+  
+  .legend-item {
+    min-width: 100%;
+  }
+  
   .legend-info {
     flex-direction: column;
     align-items: flex-start;
