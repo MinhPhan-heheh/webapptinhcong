@@ -6,9 +6,14 @@ const nodemailer = require("nodemailer");
 // ================= SEND EMAIL WITH GMAIL =================
 const sendEmail = async (to, subject, html) => {
   try {
-    console.log("📧 Starting send email to:", to);
-    console.log("📧 EMAIL_USER:", process.env.EMAIL_USER);
-    console.log("📧 EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
+    console.log("📧 [1] Starting send email to:", to);
+    console.log("📧 [2] EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("📧 [3] EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
+    
+    // Kiểm tra cấu hình
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      throw new Error("Thiếu cấu hình email: EMAIL_USER hoặc EMAIL_PASS");
+    }
     
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -18,6 +23,10 @@ const sendEmail = async (to, subject, html) => {
       },
     });
 
+    // Verify connection
+    await transporter.verify();
+    console.log("📧 [4] SMTP connection verified");
+
     const info = await transporter.sendMail({
       from: `"WorkShift" <${process.env.EMAIL_USER}>`,
       to,
@@ -25,19 +34,20 @@ const sendEmail = async (to, subject, html) => {
       html,
     });
     
-    console.log("✅ Email sent successfully:", info.messageId);
+    console.log("✅ [5] Email sent successfully:", info.messageId);
     return true;
   } catch (error) {
-    console.log("❌ Email error code:", error.code);
-    console.log("❌ Email error message:", error.message);
-    console.log("❌ Email error response:", error.response);
-    throw new Error("Không thể gửi email: " + error.message);
+    console.error("❌ Email error - Code:", error.code);
+    console.error("❌ Email error - Message:", error.message);
+    console.error("❌ Email error - Response:", error.response);
+    throw new Error(`Không thể gửi email: ${error.message}`);
   }
 };
 
 // ================= REGISTER =================
 const register = async (req, res) => {
   try {
+    console.log("📥 REGISTER - Body:", req.body);
     const { fullName, email, phone, password } = req.body;
 
     if (!fullName || !email || !password) {
@@ -81,7 +91,7 @@ const register = async (req, res) => {
       user: result.rows[0],
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ REGISTER Error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -92,6 +102,7 @@ const register = async (req, res) => {
 // ================= LOGIN =================
 const login = async (req, res) => {
   try {
+    console.log("📥 LOGIN - Body:", req.body);
     const { email, password } = req.body;
 
     const result = await pool.query(
@@ -136,7 +147,7 @@ const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ LOGIN Error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -167,7 +178,7 @@ const getMe = async (req, res) => {
       user: result.rows[0],
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ GETME Error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -198,7 +209,7 @@ const verifyToken = async (req, res) => {
       user: result.rows[0],
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ VERIFYTOKEN Error:", error);
     return res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -208,72 +219,111 @@ const verifyToken = async (req, res) => {
 
 // ================= FORGOT PASSWORD =================
 const forgotPassword = async (req, res) => {
+  console.log("=== FORGOT PASSWORD FUNCTION CALLED ===");
+  console.log("1. Request method:", req.method);
+  console.log("2. Request headers content-type:", req.headers["content-type"]);
+  console.log("3. Request body:", req.body);
+  console.log("4. Request body type:", typeof req.body);
+  
   try {
-    console.log("📥 Forgot password request body:", req.body);
+    // Kiểm tra nếu body rỗng
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error("❌ Request body is empty!");
+      return res.status(400).json({
+        success: false,
+        message: "Request body is empty. Vui lòng gửi dữ liệu JSON hợp lệ.",
+      });
+    }
+
     const { email } = req.body;
 
     if (!email) {
+      console.error("❌ Email is missing from request body!");
       return res.status(400).json({
         success: false,
         message: "Email là bắt buộc",
       });
     }
 
+    console.log("📧 Processing forgot password for email:", email);
+
+    // Kiểm tra email trong database
     const result = await pool.query(
       `SELECT * FROM users WHERE email = $1`,
       [email]
     );
 
     if (result.rows.length === 0) {
+      console.log("❌ Email not found in database:", email);
       return res.status(404).json({
         success: false,
-        message: "Email không tồn tại",
+        message: "Email không tồn tại trong hệ thống",
       });
     }
 
+    // Tạo OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
+    console.log("🔐 Generated OTP:", otp, "expires at:", expires);
+
+    // Lưu OTP vào database
     await pool.query(
       `UPDATE users SET otp = $1, otp_expired_at = $2 WHERE email = $3`,
       [otp, expires, email]
     );
 
-    console.log("📧 OTP generated for", email, ":", otp);
-
+    // Tạo nội dung email
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
         <h2 style="color: #333; text-align: center;">🔐 Khôi phục mật khẩu</h2>
-        <p>Bạn đã yêu cầu đặt lại mật khẩu. Vui lòng sử dụng mã OTP dưới đây:</p>
+        <p>Xin chào,</p>
+        <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản WorkShift. Vui lòng sử dụng mã OTP dưới đây:</p>
         <div style="text-align: center; margin: 20px 0;">
           <div style="display: inline-block; background: #f0f0f0; padding: 15px 30px; border-radius: 8px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333;">
             ${otp}
           </div>
         </div>
         <p>Mã OTP có hiệu lực trong <strong>10 phút</strong>.</p>
-        <p style="color: #999; font-size: 12px; margin-top: 20px;">Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+        <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
+        <hr style="margin: 20px 0;" />
+        <p style="color: #999; font-size: 12px;">Trân trọng,<br/>Đội ngũ WorkShift</p>
       </div>
     `;
 
+    // Gửi email
     await sendEmail(email, "OTP Reset Password - WorkShift", html);
+
+    console.log("✅ Forgot password completed successfully for:", email);
 
     res.json({
       success: true,
       message: "Đã gửi OTP đến email của bạn",
     });
   } catch (error) {
-    console.error("❌ Forgot password error:", error);
+    console.error("❌ FORGOT PASSWORD Error:", error);
+    console.error("❌ Error stack:", error.stack);
     res.status(500).json({
       success: false,
-      message: error.message || "Lỗi server",
+      message: error.message || "Lỗi server khi xử lý yêu cầu",
     });
   }
 };
 
 // ================= VERIFY OTP =================
 const verifyOtp = async (req, res) => {
+  console.log("=== VERIFY OTP FUNCTION CALLED ===");
+  console.log("Request body:", req.body);
+  
   try {
     const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email và OTP là bắt buộc",
+      });
+    }
 
     const result = await pool.query(
       `SELECT * FROM users WHERE email = $1 AND otp = $2 AND otp_expired_at > NOW()`,
@@ -292,7 +342,7 @@ const verifyOtp = async (req, res) => {
       message: "OTP hợp lệ",
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ VERIFY OTP Error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
@@ -302,8 +352,25 @@ const verifyOtp = async (req, res) => {
 
 // ================= RESET PASSWORD =================
 const resetPassword = async (req, res) => {
+  console.log("=== RESET PASSWORD FUNCTION CALLED ===");
+  console.log("Request body:", req.body);
+  
   try {
     const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: "Thiếu thông tin",
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Mật khẩu mới phải có ít nhất 6 ký tự",
+      });
+    }
 
     const check = await pool.query(
       `SELECT * FROM users WHERE email = $1 AND otp = $2 AND otp_expired_at > NOW()`,
@@ -329,7 +396,7 @@ const resetPassword = async (req, res) => {
       message: "Đổi mật khẩu thành công",
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ RESET PASSWORD Error:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi server",
