@@ -439,3 +439,187 @@
     text-align: center;
   }
 }
+/* ... toàn bộ CSS hiện tại của bạn ... */
+
+/* ================= RESPONSIVE FOR MOBILE ================= */
+
+/* Mobile nhỏ (dưới 480px) */
+@media (max-width: 480px) {
+  .shift-page {
+    padding: 8px;
+  }
+
+  .top-bar {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .filter-select {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .controls-bar {
+    padding: 8px;
+  }
+
+  .month-controls, .week-controls {
+    gap: 4px;
+  }
+
+  .control-btn {
+    padding: 6px 10px;
+    font-size: 12px;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .month-select {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+
+  .week-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .day-card {
+    min-height: auto;
+    padding: 10px;
+  }
+
+  .day-number {
+    font-size: 20px;
+  }
+
+  .shifts-list {
+    max-height: 180px;
+  }
+
+  .shift-card {
+    padding: 8px;
+  }
+
+  .shift-time {
+    font-size: 11px;
+  }
+
+  .shift-location {
+    font-size: 10px;
+  }
+
+  .add-btn {
+    padding: 8px;
+    font-size: 12px;
+    min-height: 40px;
+  }
+
+  .fab {
+    width: 48px;
+    height: 48px;
+    font-size: 24px;
+    bottom: 15px;
+    right: 15px;
+  }
+
+  /* Modal responsive */
+  .modal-box {
+    padding: 15px;
+    margin: 10px;
+    max-width: 95%;
+  }
+
+  .modal-box h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+  }
+
+  .form-group label {
+    font-size: 12px;
+  }
+
+  .form-group input, .form-group select {
+    padding: 10px;
+    font-size: 14px;
+  }
+
+  .modal-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .modal-buttons button {
+    width: 100%;
+    padding: 12px;
+    font-size: 14px;
+  }
+
+  /* Tăng vùng chạm cho nút */
+  .edit-btn, .delete-btn {
+    padding: 8px;
+    font-size: 14px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  /* Toast */
+  .toast-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+    text-align: center;
+  }
+}
+
+/* Tablet (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .shift-page {
+    padding: 12px;
+  }
+
+  .week-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .day-card {
+    min-height: auto;
+  }
+
+  .shifts-list {
+    max-height: 200px;
+  }
+
+  .control-btn {
+    padding: 8px 12px;
+  }
+
+  .fab {
+    width: 52px;
+    height: 52px;
+    bottom: 18px;
+    right: 18px;
+  }
+
+  .modal-buttons {
+    flex-direction: row;
+  }
+}
+
+/* Desktop nhỏ (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .week-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

@@ -720,3 +720,289 @@
     border: 1px solid #ddd;
   }
 }
+/* ================= RESPONSIVE FOR MOBILE ================= */
+
+/* Mobile nhỏ (dưới 480px) */
+@media (max-width: 480px) {
+  .salary-page {
+    padding: 10px;
+  }
+
+  .title {
+    font-size: 20px;
+  }
+
+  .view-toggle {
+    width: 100%;
+    justify-content: stretch;
+    padding: 6px;
+  }
+
+  .view-btn {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+
+  .filter-bar {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group select {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .filter-group label {
+    font-size: 11px;
+  }
+
+  .summary-cards {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .summary-card {
+    padding: 14px;
+  }
+
+  .summary-icon {
+    font-size: 36px;
+  }
+
+  .summary-value {
+    font-size: 22px;
+  }
+
+  .summary-label {
+    font-size: 12px;
+  }
+
+  .salary-table-container {
+    padding: 12px;
+    overflow-x: auto;
+  }
+
+  .table-title {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
+
+  .salary-table th,
+  .salary-table td {
+    padding: 8px 6px;
+    font-size: 11px;
+  }
+
+  .salary-amount {
+    font-size: 12px;
+  }
+
+  /* Workplace cards */
+  .workplace-salary-card {
+    padding: 14px;
+  }
+
+  .workplace-name {
+    font-size: 15px;
+  }
+
+  .workplace-stats {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .stat {
+    padding: 6px 10px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  /* Chart */
+  .chart-container {
+    padding: 15px;
+  }
+
+  .chart-title-section h3 {
+    font-size: 15px;
+  }
+
+  .chart-reset-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .bar-chart-label {
+    font-size: 11px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .bar-chart-name {
+    font-size: 12px;
+  }
+
+  .bar-chart-value {
+    font-size: 12px;
+  }
+
+  .bar-chart-bar-wrapper {
+    height: 28px;
+  }
+
+  .bar-chart-bar {
+    min-width: 30px;
+  }
+
+  .bar-chart-percent {
+    font-size: 10px;
+    padding-right: 6px;
+  }
+
+  .legend-item {
+    min-width: 100%;
+    padding: 6px 10px;
+  }
+
+  .legend-name,
+  .legend-value {
+    font-size: 11px;
+  }
+
+  .legend-percent {
+    font-size: 10px;
+  }
+
+  /* Toast */
+  .toast-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+    text-align: center;
+  }
+
+  .empty-data {
+    padding: 30px;
+    font-size: 13px;
+  }
+}
+
+/* Tablet (481px - 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  .salary-page {
+    padding: 15px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .view-toggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .view-btn {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filter-group {
+    width: 100%;
+  }
+
+  .filter-group select {
+    width: 100%;
+  }
+
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .workplace-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .legend-item {
+    min-width: calc(50% - 10px);
+  }
+}
+
+/* Desktop nhỏ (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .legend-item {
+    min-width: calc(33.33% - 10px);
+  }
+}
+
+/* Cải thiện touch targets trên mobile */
+@media (max-width: 768px) {
+  .view-btn,
+  .control-btn,
+  .chart-reset-btn,
+  .filter-group select {
+    min-height: 44px;
+    cursor: pointer;
+  }
+
+  .legend-item {
+    cursor: pointer;
+  }
+
+  .stat-card,
+  .summary-card,
+  .workplace-salary-card {
+    cursor: pointer;
+  }
+}
+
+/* Landscape mode trên mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .filter-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .filter-group {
+    width: auto;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .workplace-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
