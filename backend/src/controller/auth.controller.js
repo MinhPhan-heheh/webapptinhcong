@@ -3,6 +3,38 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
+// ================= SEND EMAIL WITH GMAIL =================
+const sendEmail = async (to, subject, html) => {
+  try {
+    console.log("📧 Starting send email to:", to);
+    console.log("📧 EMAIL_USER:", process.env.EMAIL_USER);
+    console.log("📧 EMAIL_PASS length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 0);
+    
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    const info = await transporter.sendMail({
+      from: `"WorkShift" <${process.env.EMAIL_USER}>`,
+      to,
+      subject,
+      html,
+    });
+    
+    console.log("✅ Email sent successfully:", info.messageId);
+    return true;
+  } catch (error) {
+    console.log("❌ Email error code:", error.code);
+    console.log("❌ Email error message:", error.message);
+    console.log("❌ Email error response:", error.response);
+    throw new Error("Không thể gửi email: " + error.message);
+  }
+};
+
 // ================= REGISTER =================
 const register = async (req, res) => {
   try {
@@ -36,7 +68,6 @@ const register = async (req, res) => {
       [fullName, email, phone || null, hashedPassword]
     );
 
-    // Tạo token
     const token = jwt.sign(
       { id: result.rows[0].id, email: result.rows[0].email },
       process.env.JWT_SECRET || "your_secret_key",
@@ -113,7 +144,7 @@ const login = async (req, res) => {
   }
 };
 
-// ================= GET ME (Lấy thông tin user hiện tại) =================
+// ================= GET ME =================
 const getMe = async (req, res) => {
   try {
     const user_id = req.user.id;
@@ -175,33 +206,18 @@ const verifyToken = async (req, res) => {
   }
 };
 
-// ================= SEND EMAIL =================
-const sendEmail = async (to, subject, html) => {
-  try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    await transporter.sendMail({
-      from: `"WorkShift" <${process.env.EMAIL_USER}>`,
-      to,
-      subject,
-      html,
-    });
-  } catch (error) {
-    console.log(error);
-    throw new Error("Không thể gửi email");
-  }
-};
-
 // ================= FORGOT PASSWORD =================
 const forgotPassword = async (req, res) => {
   try {
+    console.log("📥 Forgot password request body:", req.body);
     const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email là bắt buộc",
+      });
+    }
 
     const result = await pool.query(
       `SELECT * FROM users WHERE email = $1`,
@@ -222,6 +238,8 @@ const forgotPassword = async (req, res) => {
       `UPDATE users SET otp = $1, otp_expired_at = $2 WHERE email = $3`,
       [otp, expires, email]
     );
+
+    console.log("📧 OTP generated for", email, ":", otp);
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
@@ -244,10 +262,10 @@ const forgotPassword = async (req, res) => {
       message: "Đã gửi OTP đến email của bạn",
     });
   } catch (error) {
-    console.log(error);
+    console.error("❌ Forgot password error:", error);
     res.status(500).json({
       success: false,
-      message: "Lỗi server",
+      message: error.message || "Lỗi server",
     });
   }
 };
